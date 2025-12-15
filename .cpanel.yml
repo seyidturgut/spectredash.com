@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=$CPANEL_HOMEDIR/public_html
+    - /bin/cp -R * $DEPLOYPATH
