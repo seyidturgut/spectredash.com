@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg;
+  }
+
+  .glass-sidebar {
+    @apply bg-black/40 backdrop-blur-2xl border-r border-white/5;
+  }
+
+  .neon-text-green {
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+  }
+}
