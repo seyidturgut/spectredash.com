@@ -1,0 +1,25 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+    
+    # Handle /api/login
+    RewriteRule ^login$ login.php [L]
+    
+    # Handle /api/track
+    RewriteRule ^track$ track.php [L]
+    
+    # Handle /api/stats
+    RewriteRule ^stats$ stats.php [L]
+    
+    # Handle /api/customers
+    RewriteRule ^customers$ customers/index.php [L]
+    
+    # Handle /api/customers/:id
+    RewriteRule ^customers/([0-9]+)$ customers/[id].php [L]
+    
+    # Handle /api/customers/:id/verify
+    RewriteRule ^customers/([0-9]+)/verify$ customers/[id]/verify.php [L]
+    
+    # Handle /api/customers/:id/suspend
+    RewriteRule ^customers/([0-9]+)/suspend$ customers/[id]/suspend.php [L]
+</IfModule>
