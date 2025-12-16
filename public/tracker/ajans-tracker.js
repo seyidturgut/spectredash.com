@@ -361,6 +361,16 @@
     // --- Initialization ---
 
     function init() {
+        // Check for Visual Picker Mode IMMEDIATELY
+        // Some SPAs clear the URL components quickly, so we check this before any async config fetching
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash;
+        if (params.get('spectre_mode') === 'picker' || hash.includes('spectre_mode=picker')) {
+            enableVisualPicker();
+            // We can continue to track pageview in background, or pause it. 
+            // For now let it continue.
+        }
+
         const scriptData = getScriptData();
 
         // Manual init fallback
@@ -397,86 +407,97 @@
         setupHeatmap();          // Heatmap
         setupBehavioralAnalytics(); // New Modules
 
-        // 5. Visual Picker Mode
-        if (new URLSearchParams(window.location.search).get('spectre_mode') === 'picker') {
+        // 5. Visual Picker Mode (Run immediately if detected to avoid URL clearing issues)
+        // Check both Query Param and Hash (for SPAs)
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash;
+
+        if (params.get('spectre_mode') === 'picker' || hash.includes('spectre_mode=picker')) {
             enableVisualPicker();
         }
-
-        // SPA Support
-        let lastUrl = location.href;
-        new MutationObserver(() => {
-            if (location.href !== lastUrl) {
-                lastUrl = location.href;
-                trackPageView();
-            }
-        }).observe(document, { subtree: true, childList: true });
     }
 
-    function enableVisualPicker() {
-        console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
+    // Capture mode early just in case (optional, but good for debugging)
+    const isPickerMode = new URLSearchParams(window.location.search).get('spectre_mode') === 'picker' || window.location.hash.includes('spectre_mode=picker');
+    if (isPickerMode) {
+        console.log('Spectre: Picker Mode Detected Early');
+    }
 
-        // Inject Styles
-        const style = document.createElement('style');
-        style.innerHTML = `
+    // SPA Support
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+        if (location.href !== lastUrl) {
+            lastUrl = location.href;
+            trackPageView();
+        }
+    }).observe(document, { subtree: true, childList: true });
+}
+
+    function enableVisualPicker() {
+    console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
+
+    // Inject Styles
+    const style = document.createElement('style');
+    style.innerHTML = `
             .spectre-picker-highlight { outline: 2px solid #ec4899 !important; cursor: crosshair !important; position: relative; }
             .spectre-picker-overlay { position: fixed; bottom: 20px; right: 20px; background: #111; color: #fff; padding: 15px; border-radius: 10px; z-index: 99999; font-family: sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #333; }
         `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
 
-        // UI Overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'spectre-picker-overlay';
-        overlay.innerHTML = `<strong>🎯 Hedef Seçici</strong><br><span style="font-size:12px;color:#aaa">Seçmek istediğiniz öğeye tıklayın</span>`;
-        document.body.appendChild(overlay);
+    // UI Overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'spectre-picker-overlay';
+    overlay.innerHTML = `<strong>🎯 Hedef Seçici</strong><br><span style="font-size:12px;color:#aaa">Seçmek istediğiniz öğeye tıklayın</span>`;
+    document.body.appendChild(overlay);
 
-        // Hover Effect
-        document.addEventListener('mouseover', e => {
-            e.target.classList.add('spectre-picker-highlight');
-        });
-        document.addEventListener('mouseout', e => {
-            e.target.classList.remove('spectre-picker-highlight');
-        });
+    // Hover Effect
+    document.addEventListener('mouseover', e => {
+        e.target.classList.add('spectre-picker-highlight');
+    });
+    document.addEventListener('mouseout', e => {
+        e.target.classList.remove('spectre-picker-highlight');
+    });
 
-        // Click Capture
-        document.addEventListener('click', e => {
-            e.preventDefault();
-            e.stopPropagation();
+    // Click Capture
+    document.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
 
-            const el = e.target;
-            const text = el.innerText || el.value || '';
-            let selector = '', type = '';
+        const el = e.target;
+        const text = el.innerText || el.value || '';
+        let selector = '', type = '';
 
-            if (el.id) {
-                selector = el.id;
-                type = 'css_id';
-            } else if (el.classList.length > 0) {
-                selector = '.' + Array.from(el.classList).join('.');
-                type = 'css_class';
-            } else {
-                selector = el.tagName.toLowerCase();
-                type = 'css_class';
-            }
+        if (el.id) {
+            selector = el.id;
+            type = 'css_id';
+        } else if (el.classList.length > 0) {
+            selector = '.' + Array.from(el.classList).join('.');
+            type = 'css_class';
+        } else {
+            selector = el.tagName.toLowerCase();
+            type = 'css_class';
+        }
 
-            const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
-            if (confirm(confirmMsg)) {
-                // Redirect back to dashboard
-                const dashboardUrl = 'https://spectredash.com/dashboard?view=settings'; // Or wherever users manages goals
-                // We use window.location specific to user request
-                // Since this is generic tracker, we should ideally ask where to go, but for this project:
-                const returnUrl = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}&new_text=${encodeURIComponent(text.substring(0, 30))}`;
-                window.location.href = returnUrl;
-            }
-        }, true);
-    }     // Expose API
-    window.AjansTracker = {
-        track: trackPageView,
-        goal: trackGoal,
-        event: trackEvent // New exposed method
-    };
+        const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
+        if (confirm(confirmMsg)) {
+            // Redirect back to dashboard
+            const dashboardUrl = 'https://spectredash.com/dashboard?view=settings'; // Or wherever users manages goals
+            // We use window.location specific to user request
+            // Since this is generic tracker, we should ideally ask where to go, but for this project:
+            const returnUrl = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}&new_text=${encodeURIComponent(text.substring(0, 30))}`;
+            window.location.href = returnUrl;
+        }
+    }, true);
+}     // Expose API
+window.AjansTracker = {
+    track: trackPageView,
+    goal: trackGoal,
+    event: trackEvent // New exposed method
+};
 }
 
-    // Start
-    if (document.readyState === 'complete') {
+// Start
+if (document.readyState === 'complete') {
     init();
 } else {
     window.addEventListener('load', init);
