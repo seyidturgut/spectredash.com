@@ -16,7 +16,7 @@ if ($method === 'GET') {
         sendJson(['error' => 'Missing site_id'], 400);
     }
 
-    $stmt = $db->prepare("SELECT id, goal_name, event_type, selector_type, selector_value, is_active FROM goal_definitions WHERE site_id = ? ORDER BY id DESC");
+    $stmt = $db->prepare("SELECT id, goal_name, event_type, selector_type, selector_value, default_value, is_active FROM goal_definitions WHERE site_id = ? ORDER BY id DESC");
     $stmt->bind_param("s", $site_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -35,13 +35,14 @@ if ($method === 'GET') {
     $type = $input['type'] ?? 'css_class'; // css_class, css_id, text_contains, href_contains
     $value = $input['value'] ?? '';
     $event = $input['event'] ?? 'click';
+    $default_value = $input['default_value'] ?? 0;
 
     if (empty($site_id) || empty($name) || empty($value)) {
         sendJson(['error' => 'Missing required fields'], 400);
     }
 
-    $stmt = $db->prepare("INSERT INTO goal_definitions (site_id, goal_name, event_type, selector_type, selector_value, is_active) VALUES (?, ?, ?, ?, ?, 1)");
-    $stmt->bind_param("sssss", $site_id, $name, $event, $type, $value);
+    $stmt = $db->prepare("INSERT INTO goal_definitions (site_id, goal_name, event_type, selector_type, selector_value, default_value, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
+    $stmt->bind_param("sssssd", $site_id, $name, $event, $type, $value, $default_value);
 
     if ($stmt->execute()) {
         sendJson(['message' => 'Goal created', 'id' => $db->insert_id], 201);

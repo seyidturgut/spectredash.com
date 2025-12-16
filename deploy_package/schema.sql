@@ -129,7 +129,6 @@ CREATE TABLE IF NOT EXISTS goal_definitions (
     event_type ENUM('click', 'visibility') DEFAULT 'click',
     selector_type ENUM('css_class', 'css_id', 'text_contains', 'href_contains') NOT NULL,
     selector_value VARCHAR(255) NOT NULL,
-    default_value DECIMAL(10,2) DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
