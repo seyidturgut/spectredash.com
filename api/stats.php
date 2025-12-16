@@ -28,8 +28,8 @@ $stmt = $db->prepare("
     SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration 
     FROM sessions 
     WHERE site_id = ? 
-    AND last_activity > created_at -- Only count sessions that had some duration
-    AND created_at >= NOW() - INTERVAL 30 DAY -- Look at last 30 days
+    AND last_activity > created_at 
+    AND created_at >= NOW() - INTERVAL 30 DAY
 ");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
