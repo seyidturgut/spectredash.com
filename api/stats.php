@@ -9,87 +9,59 @@ if (empty($site_id)) {
 
 $db = getDB();
 
-// Total visits
-$query = "SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?";
-$stmt = $db->prepare($query);
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Visits): ' . $db->error]));
-}
+// 1. Total Visits
+$stmt = $db->prepare("SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $total = $stmt->get_result()->fetch_assoc()['count'];
 
-// Live users
-$query = "SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE";
-$stmt = $db->prepare($query);
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Live): ' . $db->error]));
-}
+// 2. Live Users
+// Counts active sessions in the last 5 minutes.
+// Make sure 'events.php' updates the 'sessions' table's 'last_activity' column.
+$stmt = $db->prepare("SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $live = $stmt->get_result()->fetch_assoc()['count'];
 
-// Average Duration
-$query = "
+// 3. Average Duration
+$stmt = $db->prepare("
     SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration 
     FROM sessions 
     WHERE site_id = ? 
     AND last_activity > created_at 
     AND created_at >= NOW() - INTERVAL 30 DAY
-";
-$stmt = $db->prepare($query);
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Duration): ' . $db->error]));
-}
+");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $avg_duration_seconds = (int) $stmt->get_result()->fetch_assoc()['avg_duration'];
 
-// Fallback to 0 if null
-if (!$avg_duration_seconds)
+if (!$avg_duration_seconds) {
     $avg_duration_seconds = 0;
+}
 
-// Format as 'Xdk Ysn'
 $avg_minutes = floor($avg_duration_seconds / 60);
 $avg_seconds = $avg_duration_seconds % 60;
 $average_duration_text = "{$avg_minutes}dk {$avg_seconds}sn";
 
-// Intentionally left blank as I decided to split the taskdown
-// Device breakdown
+// 4. Device Breakdown
 $stmt = $db->prepare("SELECT device, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY device");
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Devices): ' . $db->error]));
-}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $devices = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Recent feed
+// 5. Recent Feed
 $stmt = $db->prepare("SELECT * FROM ziyaretler WHERE site_id = ? ORDER BY created_at DESC LIMIT 20");
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Feed): ' . $db->error]));
-}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $feed = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Daily Stats (Last 7 days)
-// We need to generate the last 7 days and fill in gaps
+// 6. Traffic Chart (Last 7 Days)
 $daily_stats = [];
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $dayName = date('D', strtotime("-$i days")); // Mon, Tue...
+    $dayName = date('D', strtotime("-$i days"));
 
-    // Translate Day Names
-    $trDays = [
-        'Mon' => 'Pzt',
-        'Tue' => 'Sal',
-        'Wed' => 'Çar',
-        'Thu' => 'Per',
-        'Fri' => 'Cum',
-        'Sat' => 'Cmt',
-        'Sun' => 'Paz'
-    ];
+    $trDays = ['Mon' => 'Pzt', 'Tue' => 'Sal', 'Wed' => 'Çar', 'Thu' => 'Per', 'Fri' => 'Cum', 'Sat' => 'Cmt', 'Sun' => 'Paz'];
     $trName = $trDays[$dayName] ?? $dayName;
 
     $daily_stats[$date] = [
@@ -105,9 +77,6 @@ $stmt = $db->prepare("
     AND created_at >= DATE(NOW() - INTERVAL 7 DAY)
     GROUP BY DATE(created_at)
 ");
-if (!$stmt) {
-    die(json_encode(['error' => 'Query Failed (Chart): ' . $db->error]));
-}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -118,9 +87,9 @@ while ($row = $result->fetch_assoc()) {
     }
 }
 
-// Convert associative array to indexed array for JSON
 $chart_data = array_values($daily_stats);
 
+// Return JSON
 sendJson([
     'total_visits' => (int) $total,
     'live_users' => (int) $live,
