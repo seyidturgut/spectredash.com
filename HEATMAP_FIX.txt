@@ -1,0 +1,25 @@
+ISI HARITASI SORUNU COZUMU (X-Frame-Options)
+==============================================
+
+Isı haritasının panelde gorunmemesinin sebebi, sitenizin (musteri sitesi) guvenlik geregi baska sitelerin icinde (iframe) acilmasini engellemesidir.
+
+Bunu cozmek icin musteri sitesindeki `.htaccess` dosyasina veya PHP koduna su izni eklemelisiniz:
+
+YONTEM 1: .htaccess (En Kolayi)
+-------------------------------
+Musteri sitesinin ana dizinindeki .htaccess dosyasina asagidaki satiri ekleyin:
+
+Header always set X-Frame-Options "ALLOW-FROM https://spectredash.com"
+Header always set Content-Security-Policy "frame-ancestors 'self' https://spectredash.com"
+
+(Eger bu calismazsa veya sunucu desteklemezse, sadece su satiri silmeyi deneyin: Header set X-Frame-Options DENY)
+
+
+YONTEM 2: PHP (WordPress vb. icin)
+----------------------------------
+Sitenin `header.php` veya `index.php` dosyasinin en tepesine:
+
+<?php
+header('X-Frame-Options: ALLOW-FROM https://spectredash.com');
+header("Content-Security-Policy: frame-ancestors 'self' https://spectredash.com");
+?>

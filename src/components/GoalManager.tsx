@@ -23,11 +23,31 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
     const [newGoal, setNewGoal] = useState({
         name: '',
         type: 'css_class' as const,
-        value: ''
+        value: '',
+        default_value: 0
     });
+
+    const [visualUrl, setVisualUrl] = useState('');
+    const [showUrlInput, setShowUrlInput] = useState(false);
 
     useEffect(() => {
         fetchGoals();
+        // Check for picker callback
+        const params = new URLSearchParams(window.location.search);
+        const pickedSelector = params.get('new_selector');
+        const pickedType = params.get('new_type');
+        const pickedText = params.get('new_text');
+
+        if (pickedSelector) {
+            setNewGoal(prev => ({
+                ...prev,
+                type: (pickedType as any) || 'css_class',
+                value: pickedSelector,
+                name: pickedText ? `Tıklama: ${pickedText}` : 'Yeni Hedef'
+            }));
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     }, [siteId]);
 
     const fetchGoals = async () => {
@@ -62,7 +82,7 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
 
             if (res.ok) {
                 await fetchGoals();
-                setNewGoal({ name: '', type: 'css_class', value: '' });
+                setNewGoal({ name: '', type: 'css_class', value: '', default_value: 0 });
             } else {
                 alert('Hedef oluşturulamadı');
             }
@@ -82,6 +102,18 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const startVisualPicker = () => {
+        if (!visualUrl) {
+            alert('Lütfen hedef sitenin URL adresini girin');
+            return;
+        }
+        // Append param
+        const urlObj = new URL(visualUrl.startsWith('http') ? visualUrl : `https://${visualUrl}`);
+        urlObj.searchParams.set('spectre_mode', 'picker');
+        window.open(urlObj.toString(), '_blank');
+        setShowUrlInput(false);
     };
 
     const getTypeIcon = (type: string) => {
@@ -116,55 +148,106 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
                         Sitedeki tıklamaları otomatik hedefe dönüştürün.
                     </p>
                 </div>
+                <button
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg text-sm border border-blue-500/30 transition-colors"
+                >
+                    <MousePointer size={16} />
+                    Görsel Seçici
+                </button>
             </div>
 
-            {/* Create Form */}
-            <form onSubmit={handleCreate} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1 w-full space-y-1">
-                    <label className="text-xs text-gray-400 ml-1">Hedef Adı</label>
-                    <input
-                        type="text"
-                        required
-                        placeholder="Örn: WhatsApp Tıkla"
-                        value={newGoal.name}
-                        onChange={e => setNewGoal({ ...newGoal, name: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
-                    />
-                </div>
-
-                <div className="w-full md:w-48 space-y-1">
-                    <label className="text-xs text-gray-400 ml-1">Eşleşme Tipi</label>
-                    <select
-                        value={newGoal.type}
-                        onChange={e => setNewGoal({ ...newGoal, type: e.target.value as any })}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none appearance-none cursor-pointer"
+            {/* Visual Picker URL Input */}
+            <AnimatePresence>
+                {showUrlInput && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
                     >
-                        <option value="css_class">CSS Class (Sınıf)</option>
-                        <option value="css_id">Element ID</option>
-                        <option value="href_contains">Link (Href) İçerir</option>
-                        <option value="text_contains">Yazı İçerir</option>
-                    </select>
+                        <div className="flex gap-2 p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl mb-4">
+                            <input
+                                type="url"
+                                placeholder="Site adresi (örn: https://mysite.com)"
+                                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                                value={visualUrl}
+                                onChange={e => setVisualUrl(e.target.value)}
+                            />
+                            <button
+                                onClick={startVisualPicker}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500"
+                            >
+                                Git ve Seç
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Create Form */}
+            <form onSubmit={handleCreate} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-end gap-4">
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                    <div className="flex-1 space-y-1">
+                        <label className="text-xs text-gray-400 ml-1">Hedef Adı</label>
+                        <input
+                            type="text"
+                            required
+                            placeholder="Örn: WhatsApp Tıkla"
+                            value={newGoal.name}
+                            onChange={e => setNewGoal({ ...newGoal, name: e.target.value })}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                        />
+                    </div>
+
+                    <div className="w-full md:w-32 space-y-1">
+                        <label className="text-xs text-gray-400 ml-1">Değer (TL)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={newGoal.default_value}
+                            onChange={e => setNewGoal({ ...newGoal, default_value: parseFloat(e.target.value) })}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none"
+                        />
+                    </div>
                 </div>
 
-                <div className="flex-1 w-full space-y-1">
-                    <label className="text-xs text-gray-400 ml-1">Değer / Seçici</label>
-                    <input
-                        type="text"
-                        required
-                        placeholder='Örn: btn-success veya wa.me'
-                        value={newGoal.value}
-                        onChange={e => setNewGoal({ ...newGoal, value: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none font-mono"
-                    />
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                    <div className="w-full md:w-48 space-y-1">
+                        <label className="text-xs text-gray-400 ml-1">Eşleşme Tipi</label>
+                        <select
+                            value={newGoal.type}
+                            onChange={e => setNewGoal({ ...newGoal, type: e.target.value as any })}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none appearance-none cursor-pointer"
+                        >
+                            <option value="css_class">CSS Class (Sınıf)</option>
+                            <option value="css_id">Element ID</option>
+                            <option value="href_contains">Link (Href) İçerir</option>
+                            <option value="text_contains">Yazı İçerir</option>
+                        </select>
+                    </div>
+
+                    <div className="flex-1 w-full space-y-1">
+                        <label className="text-xs text-gray-400 ml-1">Değer / Seçici</label>
+                        <input
+                            type="text"
+                            required
+                            placeholder='Örn: btn-success veya wa.me'
+                            value={newGoal.value}
+                            onChange={e => setNewGoal({ ...newGoal, value: e.target.value })}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none font-mono"
+                        />
+                    </div>
                 </div>
 
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full md:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    className="w-full md:w-auto px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/20"
                 >
                     {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                    Ekle
+                    Kuralı Kaydet
                 </button>
             </form>
 
@@ -193,7 +276,17 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
                                         {getTypeIcon(goal.selector_type)}
                                     </div>
                                     <div>
-                                        <h4 className="text-white font-medium text-sm">{goal.goal_name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-white font-medium text-sm">{goal.goal_name}</h4>
+                                            {/* Show Value Badge */}
+                                            {/* @ts-ignore */}
+                                            {goal.default_value > 0 && (
+                                                <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/20">
+                                                    {/* @ts-ignore */}
+                                                    ₺{goal.default_value}
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2 text-xs text-gray-400">
                                             <span className="bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
                                                 {getTypeLabel(goal.selector_type)}
