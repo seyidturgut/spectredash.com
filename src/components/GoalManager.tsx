@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Target, Hash, MousePointer, Link2, Type, Loader2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Trash2, Target, Hash, MousePointer, Link2, Type, Loader2 } from 'lucide-react';
 
 interface GoalDefinition {
     id: number;

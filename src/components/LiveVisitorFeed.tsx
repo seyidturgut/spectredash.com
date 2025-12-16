@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Smartphone, Monitor, Clock, ArrowRight } from 'lucide-react';
+import { Globe, Smartphone, Monitor, ArrowRight } from 'lucide-react';
 import type { Visitor } from '../types';
 
 interface LiveVisitorFeedProps {

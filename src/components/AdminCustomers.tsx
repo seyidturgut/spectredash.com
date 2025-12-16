@@ -95,7 +95,7 @@ export const AdminCustomers = () => {
         if (!confirm('Bu müşteriyi ve tüm verilerini silmek istediğinize emin misiniz?')) return;
 
         try {
-            await fetch(`/api/customers/${id}.php`, { method: 'DELETE' });
+            await fetch(`/api/customers/${id}`, { method: 'DELETE' });
             fetchCustomers();
         } catch (err) {
             console.error(err);
@@ -105,7 +105,7 @@ export const AdminCustomers = () => {
 
     const handleSuspend = async (id: number, currentStatus: boolean) => {
         try {
-            await fetch(`/api/customers/[id]/suspend.php?id=${id}`, {
+            await fetch(`/api/customers/${id}/suspend`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_suspended: !currentStatus })
@@ -135,19 +135,14 @@ export const AdminCustomers = () => {
 
         setIsSubmitting(true);
         try {
-            const res = await fetch(`/api/customers/[id].php?id=${editingCustomer.id}`, {
+            await fetch(`/api/customers/${editingCustomer.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editForm)
             });
 
-            if (res.ok) {
-                fetchCustomers();
-                setEditingCustomer(null);
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Güncelleme başarısız');
-            }
+            fetchCustomers();
+            setEditingCustomer(null);
         } catch (err) {
             console.error(err);
             alert('Güncelleme hatası');
@@ -159,7 +154,7 @@ export const AdminCustomers = () => {
     const verifySite = async (id: number) => {
         setVerifyingId(id);
         try {
-            const res = await fetch(`/api/customers/[id]/verify.php?id=${id}`, { method: 'POST' });
+            const res = await fetch(`/api/customers/${id}/verify`, { method: 'POST' });
             const data = await res.json();
 
             if (res.ok) {

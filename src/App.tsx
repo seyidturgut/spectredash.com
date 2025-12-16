@@ -92,10 +92,20 @@ function App() {
           { name: 'Tablet', value: 0, color: '#06B6D4' },
         ];
 
+        const deviceMapping: Record<string, string> = {
+          'Desktop': 'Masaüstü',
+          'Mobile': 'Mobil',
+          'Tablet': 'Tablet',
+          'Laptop': 'Masaüstü' // Group Laptop with Desktop
+        };
+
         data.devices.forEach((d: any) => {
-          const index = newDeviceData.findIndex(item => item.name === d.device);
+          // Try direct match or mapped match
+          const uiName = deviceMapping[d.device] || d.device;
+          const index = newDeviceData.findIndex(item => item.name === uiName);
+
           if (index !== -1) {
-            newDeviceData[index].value = d.count;
+            newDeviceData[index].value += parseInt(d.count); // += to handle merged categories
           }
         });
         setDeviceData(newDeviceData);

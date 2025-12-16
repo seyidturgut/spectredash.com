@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Zap, Share2, FileText, MousePointer, Filter, ArrowUpRight } from 'lucide-react';
+import { Activity, Zap, Share2, FileText, MousePointer, Filter, ArrowUpRight, Sparkles, Brain } from 'lucide-react';
 import { getEventLabel, getCategoryLabel, getDateRangeLabel, formatNumber } from '../utils/labels';
 
 interface Event {
@@ -38,6 +38,10 @@ export function EventAnalytics({ siteId }: EventAnalyticsProps) {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
 
+    // AI States
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiInsight, setAiInsight] = useState<string | null>(null);
+
     useEffect(() => {
         fetchEvents();
     }, [siteId, dateRange, selectedCategory]);
@@ -52,6 +56,29 @@ export function EventAnalytics({ siteId }: EventAnalyticsProps) {
             console.error('Failed to fetch events:', err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleAiAnalyze = async () => {
+        setIsAnalyzing(true);
+        setAiInsight(null);
+        try {
+            const res = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ site_id: siteId })
+            });
+            const data = await res.json();
+            if (data.ai_insight) {
+                setAiInsight(data.ai_insight);
+            } else {
+                setAiInsight("Analiz yapılamadı. API Key eksik olabilir.");
+            }
+        } catch (err) {
+            console.error(err);
+            setAiInsight("Bir hata oluştu.");
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
@@ -87,8 +114,49 @@ export function EventAnalytics({ siteId }: EventAnalyticsProps) {
                             </button>
                         ))}
                     </div>
+
+                    {/* AI Button */}
+                    <button
+                        onClick={handleAiAnalyze}
+                        disabled={isAnalyzing}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white rounded-xl font-medium shadow-lg shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isAnalyzing ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Sparkles size={18} />
+                        )}
+                        <span>{isAnalyzing ? 'Analiz Ediliyor...' : 'Yapay Zeka Analizi'}</span>
+                    </button>
                 </div>
             </div>
+
+            {/* AI Insight Card */}
+            <AnimatePresence>
+                {aiInsight && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 p-6 rounded-2xl relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Brain size={120} />
+                        </div>
+                        <div className="flex gap-4 relative z-10">
+                            <div className="p-3 bg-indigo-500/20 rounded-xl h-fit text-indigo-300">
+                                <Sparkles size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-2">Spectre AI Görüşü</h3>
+                                <p className="text-indigo-100 leading-relaxed text-lg">
+                                    "{aiInsight}"
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Quick Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -193,7 +261,7 @@ export function EventAnalytics({ siteId }: EventAnalyticsProps) {
                                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                                         {/* Hover Action Icon */}
-                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
+                                        <div className="absolute top-4 right-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
                                             <ArrowUpRight size={16} className="text-gray-500" />
                                         </div>
                                     </motion.div>

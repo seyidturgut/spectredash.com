@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/img/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="/img/favicon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>Spectre Analytics</title>
+  <script type="module" crossorigin src="/assets/index-3y-N2NGD.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-d9oFJvv6.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered: ', reg.scope))
+          .catch(err => console.log('SW registration failed: ', err));
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AjansAmca Analitik - Proje Yetenekleri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0a0a0a',
+                            800: '#121212',
+                            700: '#1e1e1e'
+                        },
+                        brand: {
+                            purple: '#8B5CF6',
+                            blue: '#3B82F6',
+                            green: '#10B981',
+                            pink: '#EC4899',
+                            orange: '#F97316'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #c084fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-icon {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased min-h-screen">
+
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden">
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-purple/20 rounded-full blur-[120px] pointer-events-none">
+        </div>
+
+        <div class="container mx-auto px-6 pt-24 pb-16 text-center relative z-10">
+            <span
+                class="inline-block py-1 px-3 rounded-full bg-white/5 border border-white/10 text-brand-purple text-sm font-medium mb-6 animate-pulse">
+                v2.0 Canlı Sürüm
+            </span>
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6">
+                Veriyi <span class="gradient-text">Sanata</span> Dönüştüren<br>Analitik Gücü
+            </h1>
+            <p class="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                AjansAmca Analitik, karmaşık verileri işletme sahipleri için anlaşılır, eyleme dökülebilir ve görsel
+                olarak büyüleyici içgörülere dönüştürür.
+            </p>
+        </div>
+    </div>
+
+    <!-- Core Features Grid -->
+    <div class="container mx-auto px-6 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Feature 1: Real-time -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-brand-green group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v4" />
+                        <path d="m16.2 7.8 2.9-2.9" />
+                        <path d="M18 12h4" />
+                        <path d="m16.2 16.2 2.9 2.9" />
+                        <path d="M12 18v4" />
+                        <path d="m4.9 19.1 2.9-2.9" />
+                        <path d="M2 12h4" />
+                        <path d="m4.9 4.9 2.9 2.9" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">Canlı Ziyaretçi Akışı</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Sitenizdeki her hareket anlık olarak ekranınızda. Geleneksel tablolar yerine modern, ikon tabanlı ve
+                    animasyonlu bir akış ile ziyaretçilerinizi izleyin.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span
+                        class="px-2 py-1 rounded bg-brand-green/10 text-brand-green text-xs font-mono">Real-time</span>
+                    <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-mono">WebSocket Free</span>
+                </div>
+            </div>
+
+            <!-- Feature 2: Heatmaps -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-brand-orange group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                        <line x1="8" x2="8" y1="2" y2="18" />
+                        <line x1="16" x2="16" y1="6" y2="22" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">Gelişmiş Isı Haritaları</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Kullanıcılar nereye tıklıyor? Nereye kadar okuyor? Faresini nerede gezdiriyor? Tüm bu soruların
+                    cevabı tek ekranda, URL bazlı değil <strong>Sayfa Başlığı</strong> bazlı raporlama ile.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded bg-brand-orange/10 text-brand-orange text-xs font-mono">Click</span>
+                    <span class="px-2 py-1 rounded bg-brand-blue/10 text-brand-blue text-xs font-mono">Move</span>
+                    <span class="px-2 py-1 rounded bg-brand-purple/10 text-brand-purple text-xs font-mono">Scroll</span>
+                </div>
+            </div>
+
+            <!-- Feature 3: Goal Tracking -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-brand-purple group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="6" />
+                        <circle cx="12" cy="12" r="2" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">Hedef Dönüşümleri</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    "Satın Al" butonu performansı, form doldurma oranları. İşletmenizin başarısını ölçen metrikleri özel
+                    olarak tanımlayın ve takip edin.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span
+                        class="px-2 py-1 rounded bg-brand-purple/10 text-brand-purple text-xs font-mono">Conversion</span>
+                    <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-mono">ROI</span>
+                </div>
+            </div>
+
+            <!-- Feature 4: Lightweight -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-brand-blue group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">Performans Dostu</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Web sitenizi yavaşlatmaz. Google Analytics gibi ağır kütüphaneler yerine sadece <strong>5KB</strong>
+                    boyutunda ultra hafif ve optimize bir takip kodu (Tracker) kullanır.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded bg-brand-blue/10 text-brand-blue text-xs font-mono">
+                        < 5KB Gzip</span>
+                            <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-mono">Async</span>
+                </div>
+            </div>
+
+            <!-- Feature 5: Privacy & KVKK -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-brand-pink group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">KVKK & Gizlilik</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Kullanıcı verilerini anonimleştirerek saklar. Çerez (cookie) kullanmadan çalışabilme özelliği ile
+                    hem yasal uyumluluk sağlar hem de kullanıcı güvenini artırır.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded bg-brand-pink/10 text-brand-pink text-xs font-mono">Privacy
+                        First</span>
+                    <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-mono">GDPR/KVKK</span>
+                </div>
+            </div>
+
+            <!-- Feature 6: Custom Events -->
+            <div class="glass-card p-8 rounded-3xl hover:bg-white/5 transition-all duration-300 group">
+                <div
+                    class="w-14 h-14 rounded-2xl feature-icon flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <path d="M12 18v-6" />
+                        <path d="m9 15 3 3 3-3" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mb-3 text-white">Özel Olay Takibi</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Sadece sayfa görüntüleme değil. Video başlatma, dosya indirme, menü açma gibi her türlü kullanıcı
+                    etkileşimini "Event" olarak yakalayın ve raporlayın.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-mono">Custom Events</span>
+                    <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-mono">API</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Technical Specs Section -->
+        <div class="mt-24 max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Teknik Altyapı</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="p-6 bg-white/5 rounded-2xl border border-white/5">
+                    <div
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 mb-2">
+                        React</div>
+                    <div class="text-sm text-gray-500">Frontend</div>
+                </div>
+                <div class="p-6 bg-white/5 rounded-2xl border border-white/5">
+                    <div
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 mb-2">
+                        PHP 8</div>
+                    <div class="text-sm text-gray-500">Backend API</div>
+                </div>
+                <div class="p-6 bg-white/5 rounded-2xl border border-white/5">
+                    <div
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-400 mb-2">
+                        MySQL</div>
+                    <div class="text-sm text-gray-500">Database</div>
+                </div>
+                <div class="p-6 bg-white/5 rounded-2xl border border-white/5">
+                    <div
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-green-400 mb-2">
+                        Vanilla JS</div>
+                    <div class="text-sm text-gray-500">Tracker Script</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-24 text-center border-t border-white/10 pt-12 pb-12">
+            <p class="text-gray-500 text-sm">© 2024 AjansAmca Analitik Platformu. Tüm hakları saklıdır.</p>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
