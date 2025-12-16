@@ -16,8 +16,18 @@ $stmt->execute();
 $total = $stmt->get_result()->fetch_assoc()['count'];
 
 // Live users (Unique Sessions active in last 5 minutes)
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE");
-$stmt->bind_param("s", $site_id);
+// Live users (Unique Sessions active in last 5 minutes)
+// Robust: Count distinct session_ids visible in EITHER visits OR events
+$active_query = "
+    SELECT COUNT(DISTINCT session_id) as count 
+    FROM (
+        SELECT session_id FROM ziyaretler WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE
+        UNION
+        SELECT session_id FROM events WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE
+    ) as combined_activity
+";
+$stmt = $db->prepare($active_query);
+$stmt->bind_param("ss", $site_id, $site_id);
 $stmt->execute();
 $live = $stmt->get_result()->fetch_assoc()['count'];
 

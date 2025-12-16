@@ -46,7 +46,6 @@ if ($stmt->execute()) {
     }
 
     sendJson([
-    sendJson([
         'message' => 'Event tracked successfully',
         'event_id' => $db->insert_id
     ], 201);
