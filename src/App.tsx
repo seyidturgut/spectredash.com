@@ -10,14 +10,10 @@ import { ProfileModal } from './components/ProfileModal';
 import { BackgroundOrbs } from './components/BackgroundOrbs';
 import { LoginPage } from './components/LoginPage';
 import { SettingsPage } from './components/SettingsPage';
-import type { Visitor, TrackPayload, User, Stats } from './types';
-import { handleTrackRequest } from './api/track';
-
-declare global {
-  interface Window {
-    simulateIncomingData: (payload: TrackPayload) => void;
-  }
-}
+import { GoalAnalytics } from './components/GoalAnalytics';
+import { EventAnalytics } from './components/EventAnalytics';
+import { HeatmapViewer } from './components/HeatmapViewer';
+import type { Visitor, User, Stats } from './types';
 
 function App() {
   // --- REAL DATA STATE INITIALIZATION ---
@@ -28,7 +24,7 @@ function App() {
     liveUserCount: 0
   });
 
-  const [trafficData] = useState<{ name: string, visits: number }[]>([
+  const [trafficData, setTrafficData] = useState<{ name: string, visits: number }[]>([
     { name: 'Pzt', visits: 0 },
     { name: 'Sal', visits: 0 },
     { name: 'Çar', visits: 0 },
@@ -78,7 +74,7 @@ function App() {
     if (!user || user.role !== 'client' || !user.site_id) return;
 
     try {
-      const res = await fetch(`/api/stats?site_id=${user.site_id}`);
+      const res = await fetch(`/api/stats.php?site_id=${user.site_id}`);
       const data = await res.json();
 
       // Update Stats
@@ -105,12 +101,19 @@ function App() {
         setDeviceData(newDeviceData);
       }
 
+      // Update Traffic Chart
+      if (data.traffic_chart) {
+        // Ensure data matches the expected format, although the API should send it correctly
+        setTrafficData(data.traffic_chart);
+      }
+
       // Update Feed
       if (data.recent_feed) {
         const newVisitors = data.recent_feed.map((v: any) => ({
           id: v.id,
           status: 'active',
           url: v.url,
+          title: v.page_title,
           source: v.referrer || 'Direkt',
           device: v.device,
           timestamp: new Date(v.created_at).toLocaleTimeString()
@@ -140,28 +143,10 @@ function App() {
     window.location.reload();
   };
 
-  // Used for Real-time push (optional)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const processIncomingData = useCallback((_payload: TrackPayload) => {
-    fetchStats(); // Just triggers a refresh for now to keep it simple and synced
-  }, [fetchStats]);
-
   const handleDateRangeChange = (range: DateRangeOption) => {
     setSelectedRange(range);
     // TODO: Implement backend filtering by date
   };
-
-  // Keep for global access if needed, but no auto-simulation
-  useEffect(() => {
-    window.simulateIncomingData = async (payload: TrackPayload) => {
-      const response = await handleTrackRequest(payload);
-      if (response.status === 'success') {
-        processIncomingData(payload);
-      } else {
-        console.error(response.message);
-      }
-    };
-  }, [processIncomingData]);
 
 
   // If not logged in, show Login Page
@@ -218,17 +203,20 @@ function App() {
 
             {/* Stats & Charts */}
             <StatCards stats={stats} />
-            <div className="mb-8">
-              <TrafficChart data={trafficData} />
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 h-[400px]">
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               <div className="lg:col-span-2 h-full">
-                <LiveVisitorFeed visitors={visitors} />
+                <TrafficChart data={trafficData} />
               </div>
               <div className="lg:col-span-1 h-full">
                 <DeviceStats data={deviceData} />
               </div>
+            </div>
+
+            {/* Live Feed Row */}
+            <div className="mb-8 h-[500px]">
+              <LiveVisitorFeed visitors={visitors} />
             </div>
           </>
         )}
@@ -255,6 +243,21 @@ function App() {
 
         {/* SHARED: SETTINGS */}
         {activeView === 'settings' && <SettingsPage user={user} />}
+
+        {/* ANALYTICS: GOALS */}
+        {activeView === 'goals' && user.site_id && (
+          <GoalAnalytics siteId={user.site_id} />
+        )}
+
+        {/* ANALYTICS: EVENTS */}
+        {activeView === 'events' && user.site_id && (
+          <EventAnalytics siteId={user.site_id} />
+        )}
+
+        {/* ANALYTICS: HEATMAP */}
+        {activeView === 'heatmap' && user.site_id && (
+          <HeatmapViewer siteId={user.site_id} />
+        )}
 
       </DashboardLayout>
 

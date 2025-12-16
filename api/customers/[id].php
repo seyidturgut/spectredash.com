@@ -1,8 +1,12 @@
 <?php
-require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../config.php';
 
-$id = basename($_SERVER['REQUEST_URI']);
+$id = $_GET['id'] ?? null;
 $method = $_SERVER['REQUEST_METHOD'];
+
+if (!$id) {
+    sendJson(['error' => 'Missing customer ID'], 400);
+}
 
 if ($method === 'DELETE') {
     $db = getDB();

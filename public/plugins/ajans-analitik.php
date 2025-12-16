@@ -69,8 +69,8 @@ function ajans_analitik_tracker_code()
     if (empty($site_id))
         return;
 
-    // API URL - Public Tunnel Address (Temporary for Demo)
-    $api_url = 'https://cyan-socks-grin.loca.lt';
+    // API URL - Production Domain
+    $api_url = 'https://tembelhane.com';
     $endpoint = $api_url . '/api/track';
 
     ?>

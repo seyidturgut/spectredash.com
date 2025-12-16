@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Loader2, AlertCircle, Edit2, Ban, CheckCircle, X, Globe, Users2 } from 'lucide-react';
+import { Trash2, Plus, Loader2, AlertCircle, Edit2, Ban, CheckCircle, X, Globe, Users2, Target, User as UserIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { User as AppUser } from '../types';
+import { GoalManager } from './GoalManager';
 
 interface ExtendedUser extends AppUser {
     site_id?: string;
@@ -19,6 +20,8 @@ export const AdminCustomers = () => {
 
     // Edit State
     const [editingCustomer, setEditingCustomer] = useState<ExtendedUser | null>(null);
+    const [editTab, setEditTab] = useState<'details' | 'goals'>('details');
+
     const [editForm, setEditForm] = useState({
         company_name: '',
         contact_name: '',
@@ -46,7 +49,7 @@ export const AdminCustomers = () => {
 
     const fetchCustomers = async () => {
         try {
-            const res = await fetch('/api/customers');
+            const res = await fetch('/api/customers/index.php');
             const data = await res.json();
             setCustomers(data);
         } catch (err) {
@@ -62,7 +65,7 @@ export const AdminCustomers = () => {
         setError(null);
 
         try {
-            const res = await fetch('/api/customers', {
+            const res = await fetch('/api/customers/index.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(createForm),
@@ -92,7 +95,7 @@ export const AdminCustomers = () => {
         if (!confirm('Bu müşteriyi ve tüm verilerini silmek istediğinize emin misiniz?')) return;
 
         try {
-            await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+            await fetch(`/api/customers/${id}.php`, { method: 'DELETE' });
             fetchCustomers();
         } catch (err) {
             console.error(err);
@@ -102,7 +105,7 @@ export const AdminCustomers = () => {
 
     const handleSuspend = async (id: number, currentStatus: boolean) => {
         try {
-            await fetch(`/api/customers/${id}/suspend`, {
+            await fetch(`/api/customers/[id]/suspend.php?id=${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_suspended: !currentStatus })
@@ -116,6 +119,7 @@ export const AdminCustomers = () => {
 
     const startEdit = (customer: ExtendedUser) => {
         setEditingCustomer(customer);
+        setEditTab('details');
         setEditForm({
             company_name: customer.company_name || '',
             contact_name: customer.contact_name || '',
@@ -131,7 +135,7 @@ export const AdminCustomers = () => {
 
         setIsSubmitting(true);
         try {
-            const res = await fetch(`/api/customers/${editingCustomer.id}`, {
+            const res = await fetch(`/api/customers/[id].php?id=${editingCustomer.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editForm)
@@ -155,7 +159,7 @@ export const AdminCustomers = () => {
     const verifySite = async (id: number) => {
         setVerifyingId(id);
         try {
-            const res = await fetch(`/api/customers/${id}/verify`, { method: 'POST' });
+            const res = await fetch(`/api/customers/[id]/verify.php?id=${id}`, { method: 'POST' });
             const data = await res.json();
 
             if (res.ok) {
@@ -380,94 +384,137 @@ export const AdminCustomers = () => {
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.95, y: 20 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+                            className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                         >
-                            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                                <h2 className="text-xl font-bold text-white">Müşteri Düzenle</h2>
+                            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">{editingCustomer.company_name}</h2>
+                                    <p className="text-xs text-gray-400">Site ID: {editingCustomer.site_id}</p>
+                                </div>
                                 <button onClick={() => setEditingCustomer(null)} className="text-gray-400 hover:text-white">
                                     <X size={24} />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleUpdate} className="p-6 space-y-4">
-                                {error && (
-                                    <div className="bg-red-500/20 text-red-200 p-3 rounded-lg text-sm flex items-center gap-2">
-                                        <AlertCircle size={16} /> {error}
+                            {/* TABS */}
+                            <div className="flex border-b border-white/10 shrink-0">
+                                <button
+                                    onClick={() => setEditTab('details')}
+                                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${editTab === 'details' ? 'bg-white/5 text-white border-b-2 border-purple-500' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                    <UserIcon size={16} /> Müşteri Bilgileri
+                                </button>
+                                <button
+                                    onClick={() => setEditTab('goals')}
+                                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${editTab === 'goals' ? 'bg-white/5 text-white border-b-2 border-purple-500' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                    <Target size={16} /> Hedef Ayarları
+                                </button>
+                            </div>
+
+                            <div className="overflow-y-auto p-6">
+                                {editTab === 'details' ? (
+                                    <form onSubmit={handleUpdate} className="space-y-4">
+                                        {error && (
+                                            <div className="bg-red-500/20 text-red-200 p-3 rounded-lg text-sm flex items-center gap-2">
+                                                <AlertCircle size={16} /> {error}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm text-gray-400 mb-1">Şirket Adı</label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={editForm.company_name}
+                                                    onChange={e => setEditForm({ ...editForm, company_name: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm text-gray-400 mb-1">Yetkili Kişi</label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={editForm.contact_name}
+                                                    onChange={e => setEditForm({ ...editForm, contact_name: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm text-gray-400 mb-1">E-posta</label>
+                                                <input
+                                                    required
+                                                    type="email"
+                                                    value={editForm.email}
+                                                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm text-gray-400 mb-1">Domain (Site Adresi)</label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={editForm.domain}
+                                                    onChange={e => setEditForm({ ...editForm, domain: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                                    placeholder="ornek.com"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm text-gray-400 mb-1">Yeni Şifre (Opsiyonel)</label>
+                                                <input
+                                                    type="password"
+                                                    value={editForm.password}
+                                                    onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                                    placeholder="Değiştirmek için yazın"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex justify-end gap-3 border-t border-white/10 mt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingCustomer(null)}
+                                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                İptal
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                                className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+                                            >
+                                                {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+                                                Güncelle
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    /* GOALS TAB */
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex items-start gap-3">
+                                            <AlertCircle className="text-blue-400 shrink-0 mt-0.5" size={18} />
+                                            <div>
+                                                <h4 className="text-blue-400 font-bold text-sm">Uzaktan Hedef Yönetimi</h4>
+                                                <p className="text-xs text-gray-300 mt-1">
+                                                    Buradan eklediğiniz kurallar, müşterinin sitesindeki tracker scriptine otomatik iletilir.
+                                                    Kod değişikliği gerekmez.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {editingCustomer.site_id ? (
+                                            <GoalManager siteId={editingCustomer.site_id} />
+                                        ) : (
+                                            <div className="text-red-400">Site ID bulunamadı.</div>
+                                        )}
                                     </div>
                                 )}
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-1">Şirket Adı</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={editForm.company_name}
-                                            onChange={e => setEditForm({ ...editForm, company_name: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-1">Yetkili Kişi</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={editForm.contact_name}
-                                            onChange={e => setEditForm({ ...editForm, contact_name: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-1">E-posta</label>
-                                        <input
-                                            required
-                                            type="email"
-                                            value={editForm.email}
-                                            onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-1">Domain (Site Adresi)</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={editForm.domain}
-                                            onChange={e => setEditForm({ ...editForm, domain: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-                                            placeholder="ornek.com"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-1">Yeni Şifre (Opsiyonel)</label>
-                                        <input
-                                            type="password"
-                                            value={editForm.password}
-                                            onChange={e => setEditForm({ ...editForm, password: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
-                                            placeholder="Değiştirmek için yazın"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 flex justify-end gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingCustomer(null)}
-                                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-                                    >
-                                        İptal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold transition-all disabled:opacity-50 flex items-center gap-2"
-                                    >
-                                        {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-                                        Güncelle
-                                    </button>
-                                </div>
-                            </form>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

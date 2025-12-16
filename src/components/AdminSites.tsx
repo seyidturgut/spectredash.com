@@ -22,7 +22,7 @@ export const AdminSites = () => {
 
     const fetchSites = async () => {
         try {
-            const res = await fetch('http://localhost:3001/api/sites');
+            const res = await fetch('/api/sites');
             const data = await res.json();
             setSites(data);
         } catch (err) {
@@ -40,7 +40,7 @@ export const AdminSites = () => {
         setIsCreating(true);
         setError(null);
         try {
-            const res = await fetch('http://localhost:3001/api/sites', {
+            const res = await fetch('/api/sites', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ domain: newDomain }),
@@ -63,7 +63,7 @@ export const AdminSites = () => {
         if (!confirm('Bu siteyi silmek istediğinize emin misiniz?')) return;
 
         try {
-            await fetch(`http://localhost:3001/api/sites/${id}`, { method: 'DELETE' });
+            await fetch(`/api/sites/${id}`, { method: 'DELETE' });
             setSites(sites.filter(s => s.id !== id));
         } catch (err) {
             console.error(err);

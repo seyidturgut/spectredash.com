@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, Settings, X, Users2, LogOut } from 'lucide-react';
+import { LayoutDashboard, Activity, Settings, X, Users2, LogOut, Target, Zap, Map } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { User } from '../types';
@@ -18,6 +18,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isMobi
     let menuItems = [
         { icon: LayoutDashboard, label: 'Panel', id: 'dashboard' },
         { icon: Activity, label: 'Gerçek Zamanlı', id: 'realtime' },
+        { icon: Target, label: 'Hedefler', id: 'goals' },
+        { icon: Zap, label: 'Olaylar', id: 'events' },
+        { icon: Map, label: 'Heatmap', id: 'heatmap' },
         { icon: Settings, label: 'Ayarlar', id: 'settings' },
     ];
 

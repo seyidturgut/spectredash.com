@@ -1,6 +1,7 @@
 export interface Visitor {
     id: number;
     url: string;
+    title?: string;
     source: string;
     device: string;
     timestamp: string;

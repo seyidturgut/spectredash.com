@@ -1,9 +1,28 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // MUST be 0 for JSON APIs
+ini_set('log_errors', 1);
+
 // Database Configuration
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASSWORD') ?: '');
-define('DB_NAME', getenv('DB_NAME') ?: 'analytics_db');
+
+// 1. Try to load local/server config if exists (Ignored by Git)
+if (file_exists(__DIR__ . '/db_config.php')) {
+    require_once __DIR__ . '/db_config.php';
+}
+
+// 2. Fallback / Default Constants (if not defined in db_config.php)
+if (!defined('DB_HOST'))
+    define('DB_HOST', 'localhost');
+if (!defined('DB_USER'))
+    define('DB_USER', 'root');
+if (!defined('DB_PASS'))
+    define('DB_PASS', '');
+if (!defined('DB_NAME'))
+    define('DB_NAME', 'spectre');
+
+// AI Configuration
+if (!defined('DEEPSEEK_API_KEY'))
+    define('DEEPSEEK_API_KEY', '');
 
 // Create connection
 function getDB()
@@ -12,8 +31,9 @@ function getDB()
     if ($conn === null) {
         $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
         if ($conn->connect_error) {
+            error_log("Connection failed: " . $conn->connect_error);
             http_response_code(500);
-            die(json_encode(['error' => 'Database connection failed']));
+            die(json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]));
         }
         $conn->set_charset('utf8mb4');
     }

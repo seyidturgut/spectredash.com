@@ -2,24 +2,37 @@
     RewriteEngine On
     RewriteBase /api/
     
+    # Prevent redirect loops
+    RewriteCond %{ENV:REDIRECT_STATUS} 200
+    RewriteRule ^ - [L]
+    
     # Handle /api/login
-    RewriteRule ^login$ login.php [L]
+    RewriteRule ^login/?$ login.php [L,QSA]
     
     # Handle /api/track
-    RewriteRule ^track$ track.php [L]
+    RewriteRule ^track/?$ track.php [L,QSA]
+    
+    # Handle /api/config (Remote Config)
+    RewriteRule ^config/?$ get_config.php [L,QSA]
+
+    # Handle /api/goals/definitions (CRUD)
+    RewriteRule ^goals/definitions/?$ goals/definitions.php [L,QSA]
     
     # Handle /api/stats
-    RewriteRule ^stats$ stats.php [L]
+    RewriteRule ^stats/?$ stats.php [L,QSA]
+
+    # Handle /api/analyze (AI)
+    RewriteRule ^analyze/?$ analyze.php [L,QSA]
     
-    # Handle /api/customers
-    RewriteRule ^customers$ customers/index.php [L]
+    # Handle /api/customers (GET/POST)
+    RewriteRule ^customers/?$ customers/index.php [L,QSA]
     
-    # Handle /api/customers/:id
-    RewriteRule ^customers/([0-9]+)$ customers/[id].php [L]
+    # Handle /api/customers/:id (PUT/DELETE)
+    RewriteRule ^customers/([0-9]+)/?$ customers/[id].php [L,QSA]
     
     # Handle /api/customers/:id/verify
-    RewriteRule ^customers/([0-9]+)/verify$ customers/[id]/verify.php [L]
+    RewriteRule ^customers/([0-9]+)/verify/?$ customers/[id]/verify.php [L,QSA]
     
     # Handle /api/customers/:id/suspend
-    RewriteRule ^customers/([0-9]+)/suspend$ customers/[id]/suspend.php [L]
+    RewriteRule ^customers/([0-9]+)/suspend/?$ customers/[id]/suspend.php [L,QSA]
 </IfModule>

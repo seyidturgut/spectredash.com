@@ -1,8 +1,11 @@
 <?php
 require_once __DIR__ . '/../../config.php';
 
-$parts = explode('/', trim($_SERVER['REQUEST_URI'], '/'));
-$id = $parts[count($parts) - 2]; // Get ID from URL
+$id = $_GET['id'] ?? null;
+
+if (!$id) {
+    sendJson(['error' => 'Missing customer ID'], 400);
+}
 
 $db = getDB();
 $stmt = $db->prepare("SELECT site_id, domain FROM sites WHERE user_id = ?");

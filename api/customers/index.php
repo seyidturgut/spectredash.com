@@ -19,8 +19,18 @@ if ($method === 'GET') {
     sendJson($result->fetch_all(MYSQLI_ASSOC));
 
 } elseif ($method === 'POST') {
+
     // Create customer
     $input = getJsonInput();
+
+    // Fallback: If JSON is empty, check $_POST
+    if (empty($input)) {
+        $input = $_POST;
+    }
+
+    // Debug: Log input
+    // error_log("Input received: " . print_r($input, true));
+
     $company_name = $input['company_name'] ?? '';
     $contact_name = $input['contact_name'] ?? '';
     $email = $input['email'] ?? '';
