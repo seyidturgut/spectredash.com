@@ -36,6 +36,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
+    // Ignore non-http schemes (extensions, data uris, etc)
+    if (!url.protocol.startsWith('http')) return;
+
     // API Requests: Network First, No Cache
     if (url.pathname.startsWith('/api') || url.pathname.includes('.php')) {
         event.respondWith(

@@ -93,8 +93,10 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
     };
 
     const handleIframeLoad = () => {
+        // Auto-resize is often blocked by CORS if cross-origin.
+        // We attempt it silently.
         try {
-            if (iframeRef.current?.contentWindow) {
+            if (iframeRef.current?.contentWindow?.document?.body?.scrollHeight) {
                 const height = iframeRef.current.contentWindow.document.body.scrollHeight;
                 setIframeSize(prev => ({ ...prev, height: height || 800 }));
                 if (canvasRef.current) {
@@ -103,7 +105,8 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
                 }
             }
         } catch (e) {
-            console.warn("Could not auto-resize iframe due to CORS");
+            // CORS expected for external sites. Fallback to default height or user adjustable.
+            // console.debug("Auto-resize skipped (CORS)");
         }
     };
 
