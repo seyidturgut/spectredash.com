@@ -362,23 +362,13 @@
 
     function init() {
         // Check for Visual Picker Mode IMMEDIATELY
-        // Some SPAs clear the URL components quickly, so we check this before any async config fetching
         const params = new URLSearchParams(window.location.search);
         const hash = window.location.hash;
         if (params.get('spectre_mode') === 'picker' || hash.includes('spectre_mode=picker')) {
             enableVisualPicker();
-            // We can continue to track pageview in background, or pause it. 
-            // For now let it continue.
         }
 
         const scriptData = getScriptData();
-
-        // Manual init is handled by the global window.AjansTracker exposure above
-
-        if (scriptData && scriptData.siteId) {
-            if (scriptData.endpoint) CONFIG.apiEndpoint = scriptData.endpoint;
-            startTracker(scriptData.siteId);
-        }
 
         if (scriptData && scriptData.siteId) {
             if (scriptData.endpoint) CONFIG.apiEndpoint = scriptData.endpoint;
@@ -391,143 +381,122 @@
 
         state.siteId = siteId;
 
-        // 1. Fetch Config (Required for Salt)
+        // 1. Fetch Config
         await fetchRemoteConfig(siteId);
 
-        // 2. Generate Privacy-First Session ID
+        // 2. Generate Session ID
         state.sessionId = await generateSessionId(state.dailySalt);
-
         console.log('Ajans Tracker: Active.', state.sessionId);
 
         // 3. Start Tracking
         trackPageView();
 
         // 4. Setup Listeners
-        setupSmartEventListener(); // Goals
-        setupHeatmap();          // Heatmap
-        setupBehavioralAnalytics(); // New Modules
+        setupSmartEventListener();
+        setupHeatmap();
+        setupBehavioralAnalytics();
 
-        // 5. Visual Picker Mode (Run immediately if detected to avoid URL clearing issues)
-        // Check both Query Param and Hash (for SPAs)
+        // 5. Visual Picker (Late check)
         const params = new URLSearchParams(window.location.search);
         const hash = window.location.hash;
-
         if (params.get('spectre_mode') === 'picker' || hash.includes('spectre_mode=picker')) {
             enableVisualPicker();
         }
-    }
 
-    // Capture mode early just in case (optional, but good for debugging)
-    const isPickerMode = new URLSearchParams(window.location.search).get('spectre_mode') === 'picker' || window.location.hash.includes('spectre_mode=picker');
-    if (isPickerMode) {
-        console.log('Spectre: Picker Mode Detected Early');
-    }
+        // 6. SPA Support
+        let lastUrl = location.href;
+        new MutationObserver(() => {
+            if (location.href !== lastUrl) {
+                lastUrl = location.href;
+                trackPageView();
+            }
+        }).observe(document, { subtree: true, childList: true });
 
-    // SPA Support
-    let lastUrl = location.href;
-    new MutationObserver(() => {
-        if (location.href !== lastUrl) {
-            lastUrl = location.href;
-            trackPageView();
-        }
-    }).observe(document, { subtree: true, childList: true });
-
-    // --- Heartbeat & Iframe Communication ---
-    setInterval(() => {
-        // 1. Heartbeat (Keep session alive)
-        if (document.visibilityState === 'visible') {
-            trackEvent('heartbeat', 'system', null, 0, { type: 'ping' });
-        }
-
-        // 2. Heatmap Iframe Resizer (PostMessage)
-        // If we are inside an iframe (e.g. Spectre Dashboard), send our height
-        if (window.self !== window.top) {
-            const height = document.body.scrollHeight;
-            window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
-        }
-    }, 30000); // Every 30 seconds
-
-    // Initial resize trigger
-    if (window.self !== window.top) {
-        window.addEventListener('load', () => {
-            setTimeout(() => {
+        // 7. Heartbeat & Iframe Communication
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                trackEvent('heartbeat', 'system', null, 0, { type: 'ping' });
+            }
+            if (window.self !== window.top) {
                 const height = document.body.scrollHeight;
                 window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
-            }, 1000);
-        });
+            }
+        }, 30000);
+
+        // Initial resize
+        if (window.self !== window.top) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    const height = document.body.scrollHeight;
+                    window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
+                }, 1000);
+            });
+        }
     }
-}
 
     function enableVisualPicker() {
-    console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
+        console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
 
-    // Inject Styles
-    const style = document.createElement('style');
-    style.innerHTML = `
+        const style = document.createElement('style');
+        style.innerHTML = `
             .spectre-picker-highlight { outline: 2px solid #ec4899 !important; cursor: crosshair !important; position: relative; }
             .spectre-picker-overlay { position: fixed; bottom: 20px; right: 20px; background: #111; color: #fff; padding: 15px; border-radius: 10px; z-index: 99999; font-family: sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #333; }
         `;
-    document.head.appendChild(style);
+        document.head.appendChild(style);
 
-    // UI Overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'spectre-picker-overlay';
-    overlay.innerHTML = `<strong>🎯 Hedef Seçici</strong><br><span style="font-size:12px;color:#aaa">Seçmek istediğiniz öğeye tıklayın</span>`;
-    document.body.appendChild(overlay);
+        const overlay = document.createElement('div');
+        overlay.className = 'spectre-picker-overlay';
+        overlay.innerHTML = `<strong>🎯 Hedef Seçici</strong><br><span style="font-size:12px;color:#aaa">Seçmek istediğiniz öğeye tıklayın</span>`;
+        document.body.appendChild(overlay);
 
-    // Hover Effect
-    document.addEventListener('mouseover', e => {
-        e.target.classList.add('spectre-picker-highlight');
-    });
-    document.addEventListener('mouseout', e => {
-        e.target.classList.remove('spectre-picker-highlight');
-    });
+        document.addEventListener('mouseover', e => {
+            e.target.classList.add('spectre-picker-highlight');
+        });
+        document.addEventListener('mouseout', e => {
+            e.target.classList.remove('spectre-picker-highlight');
+        });
 
-    // Click Capture
-    document.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
+        document.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
 
-        const el = e.target;
-        const text = el.innerText || el.value || '';
-        let selector = '', type = '';
+            const el = e.target;
+            const text = el.innerText || el.value || '';
+            let selector = '', type = '';
 
-        if (el.id) {
-            selector = el.id;
-            type = 'css_id';
-        } else if (el.classList.length > 0) {
-            selector = '.' + Array.from(el.classList).join('.');
-            type = 'css_class';
-        } else {
-            selector = el.tagName.toLowerCase();
-            type = 'css_class';
-        }
+            if (el.id) {
+                selector = el.id;
+                type = 'css_id';
+            } else if (el.classList.length > 0) {
+                selector = '.' + Array.from(el.classList).join('.');
+                type = 'css_class';
+            } else {
+                selector = el.tagName.toLowerCase();
+                type = 'css_class';
+            }
 
-        const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
-        if (confirm(confirmMsg)) {
-            // Redirect back to dashboard
-            const dashboardUrl = 'https://spectredash.com/dashboard?view=settings'; // Or wherever users manages goals
-            // We use window.location specific to user request
-            // Since this is generic tracker, we should ideally ask where to go, but for this project:
-            const returnUrl = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}&new_text=${encodeURIComponent(text.substring(0, 30))}`;
-            window.location.href = returnUrl;
-        }
-    }, true);
-}
+            const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
+            if (confirm(confirmMsg)) {
+                // Return to dashboard
+                const returnUrl = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}&new_text=${encodeURIComponent(text.substring(0, 30))}`;
+                window.location.href = returnUrl;
+            }
+        }, true);
+    }
 
-// Expose API Globally
-window.AjansTracker = {
-    init: (id) => startTracker(id), // Allow manual init
-    track: trackPageView,
-    goal: trackGoal,
-    event: trackEvent
-};
+    // Expose API Globally
+    window.AjansTracker = {
+        init: (id) => startTracker(id),
+        track: trackPageView,
+        goal: trackGoal,
+        event: trackEvent
+    };
 
-// Start
-if (document.readyState === 'complete') {
-    init();
-} else {
-    window.addEventListener('load', init);
-}
+    // Auto Start
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
 
-}) (window, document);
+})(window, document);
