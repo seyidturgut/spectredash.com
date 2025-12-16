@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { Menu } from 'lucide-react';
 import type { User } from '../types';
+import { AiHeaderButton } from '../components/AiHeaderButton';
+import { AiSummaryModal } from '../components/AiSummaryModal';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -13,10 +15,46 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeView, onNavigate, user, onLogout }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiInsight, setAiInsight] = useState<string | null>(null);
+
+    const handleAiAnalyze = async () => {
+        setIsAiModalOpen(true);
+        setAiLoading(true);
+        setAiInsight(null);
+
+        // Get Site ID - ideally from context, here assuming we analyze the main/first site available to the user
+        // Or if 'user' object has a 'site_id'.
+        // For this user (Seyid), let's assume valid credentials/site context in session or hardcoded for 'default'/current logic
+        // We'll trust the API to handle the 'current' site if site_id is missing?
+        // Actually, let's check localStorage or URL params.
+        // Fallback: If no specific site selected, API might error. 
+        // Let's try to get it from URL or a store.
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteId = urlParams.get('site_id') || 'default'; // Adjust as needed
+
+        try {
+            const res = await fetch('/api/analyze.php', { // Ensure .php extension if needed
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ site_id: siteId })
+            });
+            const data = await res.json();
+            if (data.ai_insight) {
+                setAiInsight(data.ai_insight);
+            } else {
+                setAiInsight("Analiz oluşturulamadı. (Veri yetersiz veya API hatası)");
+            }
+        } catch (e) {
+            setAiInsight("Bağlantı hatası oluştu.");
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     return (
         <div className="flex min-h-screen relative">
-            {/* Sidebar */}
             <Sidebar
                 activeView={activeView}
                 onNavigate={onNavigate}
@@ -27,7 +65,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
             />
 
             {/* Mobile Header Trigger */}
-            <div className="lg:hidden absolute top-6 right-6 z-30">
+            <div className="lg:hidden absolute top-6 right-6 z-30 flex gap-3">
+                <AiHeaderButton onClick={handleAiAnalyze} isLoading={aiLoading} />
                 <button
                     onClick={() => setIsMobileOpen(true)}
                     className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white"
@@ -36,12 +75,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                 </button>
             </div>
 
-            {/* Main Content */}
+            {/* Desktop Header Actions (Absolute Top Right) */}
+            <div className="hidden lg:block absolute top-8 right-8 z-30">
+                <AiHeaderButton onClick={handleAiAnalyze} isLoading={aiLoading} />
+            </div>
+
             <main className="flex-1 lg:ml-64 p-4 md:p-8 relative z-0">
                 <div className="max-w-7xl mx-auto space-y-8 pb-20 md:pb-0">
                     {children}
                 </div>
             </main>
+
+            <AiSummaryModal
+                isOpen={isAiModalOpen}
+                onClose={() => setIsAiModalOpen(false)}
+                isLoading={aiLoading}
+                insight={aiInsight}
+            />
         </div>
     );
 };

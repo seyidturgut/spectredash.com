@@ -38,6 +38,14 @@ $stmt = $db->prepare("INSERT INTO events (site_id, session_id, event_name, event
 $stmt->bind_param("sssssisss", $site_id, $session_id, $event_name, $event_category, $event_label, $event_value, $metadata_json, $url, $page_title);
 
 if ($stmt->execute()) {
+    // CRITICAL: Update Session Activity (Heartbeat Support)
+    if (!empty($session_id)) {
+        $upd = $db->prepare("UPDATE sessions SET last_activity = NOW() WHERE session_id = ? AND site_id = ?");
+        $upd->bind_param("ss", $session_id, $site_id);
+        $upd->execute();
+    }
+
+    sendJson([
     sendJson([
         'message' => 'Event tracked successfully',
         'event_id' => $db->insert_id
