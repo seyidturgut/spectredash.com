@@ -413,7 +413,7 @@
     }
 
     function enableVisualPicker() {
-        console.log('Spectre: Visual Picker Enabled');
+        console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
 
         // Inject Styles
         const style = document.createElement('style');
@@ -476,7 +476,10 @@
 }
 
     // Start
-    if (document.readyState === 'complete') init();
-else window.addEventListener('load', init);
+    if (document.readyState === 'complete') {
+    init();
+} else {
+    window.addEventListener('load', init);
+}
 
 }) (window, document);
