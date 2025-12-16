@@ -1,100 +1,121 @@
 <?php
+// CRASH-DEBUFF: Turn off screen errors to prevent "Unexpected end of JSON"
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/config.php';
+
+// Prepare default response structure (Safe Mode)
+$response = [
+    'total_visits' => 0,
+    'live_users' => 0,
+    'average_duration' => '0dk 0sn',
+    'devices' => [],
+    'recent_feed' => [],
+    'traffic_chart' => [],
+    'debug_log' => [] // To capture errors without crashing
+];
 
 $site_id = $_GET['site_id'] ?? '';
 
 if (empty($site_id)) {
-    sendJson(['error' => 'Missing site_id query parameter'], 400);
+    sendJson(['error' => 'Missing site_id'], 400);
 }
 
 $db = getDB();
 
+function safeQuery($db, $sql, $types, $params)
+{
+    try {
+        $stmt = $db->prepare($sql);
+        if (!$stmt) {
+            return ['error' => $db->error];
+        }
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        return $stmt->get_result();
+    } catch (Exception $e) {
+        return ['error' => $e->getMessage()];
+    }
+}
+
 // 1. Total Visits
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$total = $stmt->get_result()->fetch_assoc()['count'];
+$res = safeQuery($db, "SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?", "s", [$site_id]);
+if (is_array($res) && isset($res['error'])) {
+    $response['debug_log'][] = "Visits Error: " . $res['error'];
+} else {
+    $row = $res->fetch_assoc();
+    $response['total_visits'] = (int) ($row['count'] ?? 0);
+}
 
 // 2. Live Users
-// Counts active sessions in the last 5 minutes.
-// Make sure 'events.php' updates the 'sessions' table's 'last_activity' column.
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$live = $stmt->get_result()->fetch_assoc()['count'];
+// Attempt with sessions table. If it fails (missing table/column), log it and return 0.
+$res = safeQuery($db, "SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE", "s", [$site_id]);
+if (is_array($res) && isset($res['error'])) {
+    $response['debug_log'][] = "Live Users Error: " . $res['error'];
+} else {
+    $row = $res->fetch_assoc();
+    $response['live_users'] = (int) ($row['count'] ?? 0);
+}
 
 // 3. Average Duration
-$stmt = $db->prepare("
+$res = safeQuery($db, "
     SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration 
     FROM sessions 
     WHERE site_id = ? 
     AND last_activity > created_at 
     AND created_at >= NOW() - INTERVAL 30 DAY
-");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$avg_duration_seconds = (int) $stmt->get_result()->fetch_assoc()['avg_duration'];
+", "s", [$site_id]);
 
-if (!$avg_duration_seconds) {
-    $avg_duration_seconds = 0;
+if (is_array($res) && isset($res['error'])) {
+    $response['debug_log'][] = "Duration Error: " . $res['error'];
+} else {
+    $row = $res->fetch_assoc();
+    $avg = (int) ($row['avg_duration'] ?? 0);
+    $response['average_duration'] = floor($avg / 60) . 'dk ' . ($avg % 60) . 'sn';
 }
 
-$avg_minutes = floor($avg_duration_seconds / 60);
-$avg_seconds = $avg_duration_seconds % 60;
-$average_duration_text = "{$avg_minutes}dk {$avg_seconds}sn";
+// 4. Devices
+$res = safeQuery($db, "SELECT device, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY device", "s", [$site_id]);
+if (!is_array($res) || !isset($res['error'])) {
+    $response['devices'] = $res->fetch_all(MYSQLI_ASSOC);
+}
 
-// 4. Device Breakdown
-$stmt = $db->prepare("SELECT device, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY device");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$devices = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+// 5. Recent Feed (Limit 10 for safety)
+$res = safeQuery($db, "SELECT * FROM ziyaretler WHERE site_id = ? ORDER BY created_at DESC LIMIT 10", "s", [$site_id]);
+if (!is_array($res) || !isset($res['error'])) {
+    $response['recent_feed'] = $res->fetch_all(MYSQLI_ASSOC);
+}
 
-// 5. Recent Feed
-$stmt = $db->prepare("SELECT * FROM ziyaretler WHERE site_id = ? ORDER BY created_at DESC LIMIT 20");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$feed = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-// 6. Traffic Chart (Last 7 Days)
-$daily_stats = [];
+// 6. Traffic Chart
+// Initialize empty chart
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $dayName = date('D', strtotime("-$i days"));
-
-    $trDays = ['Mon' => 'Pzt', 'Tue' => 'Sal', 'Wed' => 'Çar', 'Thu' => 'Per', 'Fri' => 'Cum', 'Sat' => 'Cmt', 'Sun' => 'Paz'];
-    $trName = $trDays[$dayName] ?? $dayName;
-
-    $daily_stats[$date] = [
-        'name' => $trName,
-        'visits' => 0
-    ];
+    $response['traffic_chart'][] = ['date' => $date, 'visits' => 0];
 }
 
-$stmt = $db->prepare("
+$res = safeQuery($db, "
     SELECT DATE(created_at) as date, COUNT(*) as count 
     FROM ziyaretler 
     WHERE site_id = ? 
     AND created_at >= DATE(NOW() - INTERVAL 7 DAY)
     GROUP BY DATE(created_at)
-");
-$stmt->bind_param("s", $site_id);
-$stmt->execute();
-$result = $stmt->get_result();
+", "s", [$site_id]);
 
-while ($row = $result->fetch_assoc()) {
-    if (isset($daily_stats[$row['date']])) {
-        $daily_stats[$row['date']]['visits'] = (int) $row['count'];
+if (!is_array($res) || !isset($res['error'])) {
+    $data_map = [];
+    while ($row = $res->fetch_assoc()) {
+        $data_map[$row['date']] = $row['count'];
+    }
+    // Remap to chart
+    foreach ($response['traffic_chart'] as &$point) {
+        if (isset($data_map[$point['date']])) {
+            $point['visits'] = (int) $data_map[$point['date']];
+        }
     }
 }
 
-$chart_data = array_values($daily_stats);
-
-// Return JSON
-sendJson([
-    'total_visits' => (int) $total,
-    'live_users' => (int) $live,
-    'average_duration' => $average_duration_text,
-    'devices' => $devices,
-    'recent_feed' => $feed,
-    'traffic_chart' => $chart_data
-]);
+// ALWAYS return JSON, even if empty. Never 500.
+header('Content-Type: application/json');
+echo json_encode($response);
+exit;
