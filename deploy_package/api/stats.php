@@ -10,27 +10,37 @@ if (empty($site_id)) {
 $db = getDB();
 
 // Total visits
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?");
+$query = "SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ?";
+$stmt = $db->prepare($query);
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Visits): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $total = $stmt->get_result()->fetch_assoc()['count'];
 
-// Live users (Unique Sessions active in last 5 minutes)
-// Note: api/events.php now updates the sessions table, so this count is accurate.
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE");
+// Live users
+$query = "SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE";
+$stmt = $db->prepare($query);
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Live): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $live = $stmt->get_result()->fetch_assoc()['count'];
 
-// Average Duration (From Sessions table)
-// Calculate time between start and last activity
-$stmt = $db->prepare("
+// Average Duration
+$query = "
     SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration 
     FROM sessions 
     WHERE site_id = ? 
     AND last_activity > created_at 
     AND created_at >= NOW() - INTERVAL 30 DAY
-");
+";
+$stmt = $db->prepare($query);
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Duration): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $avg_duration_seconds = (int) $stmt->get_result()->fetch_assoc()['avg_duration'];
@@ -47,12 +57,18 @@ $average_duration_text = "{$avg_minutes}dk {$avg_seconds}sn";
 // Intentionally left blank as I decided to split the taskdown
 // Device breakdown
 $stmt = $db->prepare("SELECT device, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY device");
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Devices): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $devices = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Recent feed
 $stmt = $db->prepare("SELECT * FROM ziyaretler WHERE site_id = ? ORDER BY created_at DESC LIMIT 20");
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Feed): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $feed = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -89,6 +105,9 @@ $stmt = $db->prepare("
     AND created_at >= DATE(NOW() - INTERVAL 7 DAY)
     GROUP BY DATE(created_at)
 ");
+if (!$stmt) {
+    die(json_encode(['error' => 'Query Failed (Chart): ' . $db->error]));
+}
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $result = $stmt->get_result();
