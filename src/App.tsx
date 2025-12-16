@@ -81,6 +81,7 @@ function App() {
       setStats(prev => ({
         ...prev,
         totalVisits: data.total_visits || 0,
+        averageDuration: data.average_duration || '0dk 0sn',
         liveUserCount: data.live_users || 0
       }));
 

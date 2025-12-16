@@ -8,7 +8,12 @@ export const EVENT_LABELS: Record<string, string> = {
     'form_submit': 'Form Gönderimi',
     'link_click': 'Bağlantıya Tıklama',
     'page_view': 'Sayfa Görüntüleme',
-    'test_event': 'Test Olayı'
+    'test_event': 'Test Olayı',
+    'performance_metric': 'Performans Analizi',
+    'form_abandonment': 'Yarım Bırakılan Form',
+    'rage_click': 'Sinirli Tıklama (Rage Click)',
+    'dead_click': 'Ölü Tıklama (Dead Click)',
+    'script_error': 'Javascript Hatası'
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {

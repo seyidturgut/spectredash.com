@@ -21,6 +21,25 @@ $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $live = $stmt->get_result()->fetch_assoc()['count'];
 
+// Average Duration (Session Duration)
+// We estimate this by taking (MAX(time) - MIN(time)) for each distinct session
+$stmt = $db->prepare("
+    SELECT AVG(duration) as avg_duration FROM (
+        SELECT TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) as duration
+        FROM ziyaretler
+        WHERE site_id = ?
+        GROUP BY session_id
+        HAVING duration > 0 -- Only count sessions with >1 pageview/action
+    ) as sessions
+");
+$stmt->bind_param("s", $site_id);
+$stmt->execute();
+$avg_duration_seconds = (int) $stmt->get_result()->fetch_assoc()['avg_duration'];
+// Format as 'Xdk Ysn'
+$avg_minutes = floor($avg_duration_seconds / 60);
+$avg_seconds = $avg_duration_seconds % 60;
+$average_duration_text = "{$avg_minutes}dk {$avg_seconds}sn";
+
 // Intentionally left blank as I decided to split the taskdown
 // Device breakdown
 $stmt = $db->prepare("SELECT device, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY device");
@@ -82,6 +101,7 @@ $chart_data = array_values($daily_stats);
 sendJson([
     'total_visits' => (int) $total,
     'live_users' => (int) $live,
+    'average_duration' => $average_duration_text,
     'devices' => $devices,
     'recent_feed' => $feed,
     'traffic_chart' => $chart_data

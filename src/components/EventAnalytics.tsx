@@ -242,7 +242,9 @@ export function EventAnalytics({ siteId }: EventAnalyticsProps) {
                                                         </span>
                                                         {event.event_label && (
                                                             <span className="truncate max-w-[120px]" title={event.event_label}>
-                                                                • {event.event_label}
+                                                                • {event.event_label === 'LCP' ? 'Açılış Hızı (LCP)' :
+                                                                    event.event_label === 'FID' ? 'Tepki Süresi (FID)' :
+                                                                        event.event_label === 'CLS' ? 'Görsel Kayma (CLS)' : event.event_label}
                                                             </span>
                                                         )}
                                                     </div>
