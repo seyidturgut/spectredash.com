@@ -373,11 +373,11 @@
 
         const scriptData = getScriptData();
 
-        // Manual init fallback
-        if (!scriptData && !window.AjansTracker) {
-            // Expose init method for manual call
-            window.AjansTracker = { init: (id) => startTracker(id) };
-            return;
+        // Manual init is handled by the global window.AjansTracker exposure above
+
+        if (scriptData && scriptData.siteId) {
+            if (scriptData.endpoint) CONFIG.apiEndpoint = scriptData.endpoint;
+            startTracker(scriptData.siteId);
         }
 
         if (scriptData && scriptData.siteId) {
@@ -488,13 +488,15 @@
             window.location.href = returnUrl;
         }
     }, true);
-}     // Expose API
+}
+
+// Expose API Globally
 window.AjansTracker = {
+    init: (id) => startTracker(id), // Allow manual init
     track: trackPageView,
     goal: trackGoal,
-    event: trackEvent // New exposed method
+    event: trackEvent
 };
-}
 
 // Start
 if (document.readyState === 'complete') {
