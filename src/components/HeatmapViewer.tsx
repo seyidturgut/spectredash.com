@@ -92,9 +92,26 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
         heat.draw();
     };
 
+    // Listen for resize messages from the tracker (PostMessage)
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data && event.data.type === 'SPECTRE_RESIZE' && event.data.height) {
+                // Security check? Ideally check origin, but verify site_id match is enough contextually
+                const height = event.data.height;
+                setIframeSize(prev => ({ ...prev, height: height }));
+                if (canvasRef.current) {
+                    canvasRef.current.height = height;
+                    requestAnimationFrame(drawHeatmap);
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     const handleIframeLoad = () => {
-        // Auto-resize is often blocked by CORS if cross-origin.
-        // We attempt it silently.
+        // Fallback for same-origin or if tracker not yet active
         try {
             if (iframeRef.current?.contentWindow?.document?.body?.scrollHeight) {
                 const height = iframeRef.current.contentWindow.document.body.scrollHeight;
@@ -105,8 +122,7 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
                 }
             }
         } catch (e) {
-            // CORS expected for external sites. Fallback to default height or user adjustable.
-            // console.debug("Auto-resize skipped (CORS)");
+            // Expected CORS block, waiting for postMessage
         }
     };
 

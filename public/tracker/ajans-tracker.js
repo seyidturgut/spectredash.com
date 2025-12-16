@@ -431,6 +431,31 @@
             trackPageView();
         }
     }).observe(document, { subtree: true, childList: true });
+
+    // --- Heartbeat & Iframe Communication ---
+    setInterval(() => {
+        // 1. Heartbeat (Keep session alive)
+        if (document.visibilityState === 'visible') {
+            trackEvent('heartbeat', 'system', null, 0, { type: 'ping' });
+        }
+
+        // 2. Heatmap Iframe Resizer (PostMessage)
+        // If we are inside an iframe (e.g. Spectre Dashboard), send our height
+        if (window.self !== window.top) {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
+        }
+    }, 30000); // Every 30 seconds
+
+    // Initial resize trigger
+    if (window.self !== window.top) {
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const height = document.body.scrollHeight;
+                window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
+            }, 1000);
+        });
+    }
 }
 
     function enableVisualPicker() {

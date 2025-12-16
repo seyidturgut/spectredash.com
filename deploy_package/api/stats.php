@@ -15,26 +15,29 @@ $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $total = $stmt->get_result()->fetch_assoc()['count'];
 
-// Live users (last 5 minutes)
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM ziyaretler WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE");
+// Live users (Unique Sessions active in last 5 minutes)
+$stmt = $db->prepare("SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $live = $stmt->get_result()->fetch_assoc()['count'];
 
-// Average Duration (Session Duration)
-// We estimate this by taking (MAX(time) - MIN(time)) for each distinct session
+// Average Duration (From Sessions table)
+// Calculate time between start and last activity
 $stmt = $db->prepare("
-    SELECT AVG(duration) as avg_duration FROM (
-        SELECT TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) as duration
-        FROM ziyaretler
-        WHERE site_id = ?
-        GROUP BY session_id
-        HAVING duration > 0 -- Only count sessions with >1 pageview/action
-    ) as sessions
+    SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration 
+    FROM sessions 
+    WHERE site_id = ? 
+    AND last_activity > created_at -- Only count sessions that had some duration
+    AND created_at >= NOW() - INTERVAL 30 DAY -- Look at last 30 days
 ");
 $stmt->bind_param("s", $site_id);
 $stmt->execute();
 $avg_duration_seconds = (int) $stmt->get_result()->fetch_assoc()['avg_duration'];
+
+// Fallback to 0 if null
+if (!$avg_duration_seconds)
+    $avg_duration_seconds = 0;
+
 // Format as 'Xdk Ysn'
 $avg_minutes = floor($avg_duration_seconds / 60);
 $avg_seconds = $avg_duration_seconds % 60;
