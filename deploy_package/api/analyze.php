@@ -168,49 +168,60 @@ foreach ($issues as $k => $v) {
 // 3. Data Readiness Check - REMOVED to allow analysis for all sites
 // We want AI to comment even on empty data (e.g. "No visitors yet, start marketing!")
 
-// 4. Prepare Data Payload (JSON)
+// 4. Prepare Professional Data Payload (English Keys for AI Clarity)
 $data_payload = [
-    "site_ozeti" => [
-        "ziyaretci_sayisi" => (int) $stats['visitors'],
-        "mobil_kullanici_orani" => "%" . $mobile_percent,
-        "site_hizi_durumu" => $speed_status,
-        "en_buyuk_sorun" => [
-            "tip" => $max_issue['type'],
-            "yer" => $max_issue['selector'],
-            "sayi" => $max_issue['count']
+    "metrics" => [
+        "visitors" => [
+            "value" => (int) $stats['visitors'],
+            "context" => ($stats['visitors'] < 10) ? "Very Low Traffic (Startup Phase)" : "Active Traffic"
         ],
-        "form_durumu" => [
-            "terk_edilen_input" => $form['input'] ?? 'Yok'
-        ]
+        "bounce_rate" => [
+            "value" => $stats['bounce_rate'], // e.g. "45%"
+            "context" => "Lower is better. >70% indicates poor engagement."
+        ],
+        "average_duration" => $stats['avg_duration'],
+        "mobile_usage_ratio" => $stats['mobile_desktop_ratio']
+    ],
+    "performance" => [
+        "lcp_score" => $lcp_val . "ms",
+        "status" => $speed_status, // "Yavaş" / "Hızlı"
+        "benchmark" => "Good < 2500ms, Poor > 4000ms"
+    ],
+    "top_issues" => [
+        "rage_clicks" => $max_issue['type'] === 'Rage Click (Öfke Tıklaması)' ? $max_issue : null,
+        "dead_clicks" => $max_issue['type'] === 'Dead Click (Ölü Tıklama)' ? $max_issue : null,
+        "form_abandonment" => $max_issue['type'] === 'Form Terk Etme' ? $max_issue : null
+    ],
+    "successful_goals" => [
+        "top_goal" => $stats['top_goal']
     ]
 ];
 
-$user_message = json_encode($data_payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+$user_message = json_encode($data_payload, JSON_PRETTY_PRINT);
 
 // 5. Call DeepSeek API
 $system_prompt = '
-Sen "Spectre AI" adında, dijital pazarlama ve UX (Kullanıcı Deneyimi) uzmanısın.
-Görevin: Sana vereceğim web sitesi analiz verilerini inceleyerek site sahibine (teknik bilgisi olmayan biri) tek bir paragrafta, samimi ve net bir "Günün Tavsiyesi"ni vermek.
+You are "Spectre AI", a friendly and highly experienced UX & Digital Growth Analyst.
+Your Goal: Analyze the provided JSON data and give ONE single, high-impact advice to the site owner in TURKISH.
 
-Kurallar:
-1. Kesinlikle teknik terim (LCP, DOM, Selector, ID) kullanma.
-2. Çıktı dili Türkçe olmalı.
-3. Tonun: Çok samimi, içten ve motive edici. Sanki kahve eşliğinde muhabbet eden bir arkadaş gibi konuş. Asla robotik olma.
-4. Sadece EN ÖNEMLİ tek bir soruna veya fırsata odaklan. Hepsini anlatmaya çalışma.
+The User: A business owner with no technical knowledge.
+The Tone: Sincere, motivating, like a supportive business partner or friend. Avoid robotic language. Use emojis sparingly.
 
-Senaryo Örnekleri (Bunlara göre yanıt üret):
-- Eğer HİÇ VERİ YOKSA veya Ziyaretçi < 5 ise: "Henüz dükkanı yeni açmış gibiyiz! 👀 Siten yayında ama buralar biraz sessiz. İlk iş olarak sosyal medyada bir paylaşım yapıp arkadaşlarını davet etmeye ne dersin?" de.
-- Eğer Rage Click yüksekse: "Kullanıcılar şu butona sinirleniyor, bozuk olabilir mi?" de.
-- Eğer Dead Click yüksekse: "Ziyaretçiler şu resmi link sanıp tıklıyor, oraya bir link verelim!" de.
-- Eğer Form Abandonment yüksekse: "Müşteriler formun Telefon kısmına gelince vazgeçiyor, bu soruyu kaldırmayı düşündün mü?" de.
-- Eğer LCP (Hız) kötüyse: "Site biraz yavaş açılıyor, bu yüzden müşteri kaybediyor olabilirsin." de.
-- Eğer veriler güzelse: "Harika gidiyorsun! Rüzgarı arkana almışsın, aynen devam! 🚀" de.
+Instructions:
+1. Analyze the "metrics" and "top_issues".
+2. Identify the biggest opportunity or problem.
+   - If traffic is 0-5: Focus on motivation and marketing (social media, sharing links).
+   - If Rage Clicks exist: Warn about broken buttons clearly.
+   - If Dead Clicks exist: Suggest linking that element.
+   - If Speed is poor: Mention it simplifies losing customers.
+   - If no issues: Celebrate the growth!
+3. Output ONLY the Turkish advice paragraph. No technical jargon.
 ';
 
 $ch = curl_init('https://api.deepseek.com/chat/completions');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Max 10s timeout
+curl_setopt($ch, CURLOPT_TIMEOUT, 30); // Extended timeout
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json',
     'Authorization: Bearer ' . DEEPSEEK_API_KEY
@@ -221,20 +232,21 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
         ['role' => 'system', 'content' => $system_prompt],
         ['role' => 'user', 'content' => $user_message]
     ],
-    'temperature' => 1.0
+    'temperature' => 1.1 // Slightly creative
 ]));
 
 $response = curl_exec($ch);
-
-if (curl_errno($ch)) {
-    // Graceful fallback on timeout/error
-    $advice = "Şu an AI beynim aşırı yoğun! 🤯 Ama verilerine baktım, her şey yolunda görünüyor. Birazdan tekrar deneyebilirsin.";
-} else {
-    $ai_data = json_decode($response, true);
-    $advice = $ai_data['choices'][0]['message']['content'] ?? 'Analiz oluşturulamadı.';
-}
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curl_error = curl_error($ch);
 curl_close($ch);
 
+if ($curl_error || $http_code !== 200) {
+    // Fallback message with debug hint (hidden from user ideally but useful for now)
+    $advice = "Şu an bağlantıda ufak bir pürüz var! 📡 (Kod: {$http_code}). Ama verilerin güvende, birazdan tekrar deneyebiliriz.";
+} else {
+    $ai_data = json_decode($response, true);
+    $advice = $ai_data['choices'][0]['message']['content'] ?? "Analiz oluşturulamadı. (Yanıt boş)";
+}
 
 // 6. Return Result
 sendJson([
