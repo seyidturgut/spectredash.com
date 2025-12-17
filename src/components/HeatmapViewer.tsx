@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Map, Monitor, Smartphone, Info } from 'lucide-react';
+import { Map, Info, Trash2, Camera, RefreshCw } from 'lucide-react';
 import simpleheat from 'simpleheat';
 
-interface HeatmapData {
-    clicks?: Array<{ x: number; y: number; count: number; viewport_width: number; viewport_height: number }>;
-    scrolls?: Array<{ depth: number; count: number }>;
-    movements?: Array<{ x: number; y: number; count: number }>;
+interface HeatmapPage {
+    id: number;
+    url: string;
+    device: 'Desktop' | 'Mobile';
+    screenshot_path: string;
+    created_at: string;
 }
 
 interface HeatmapViewerProps {
@@ -13,53 +15,98 @@ interface HeatmapViewerProps {
 }
 
 export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
-    const [urls, setUrls] = useState<{ url: string; title: string }[]>([]);
-    const [selectedUrl, setSelectedUrl] = useState('');
+    const [pages, setPages] = useState<HeatmapPage[]>([]);
+    const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
+    const [newPageUrl, setNewPageUrl] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
+
     const [heatmapType, setHeatmapType] = useState<'click' | 'movement'>('click');
-    const [deviceType, setDeviceType] = useState<'Desktop' | 'Mobile'>('Desktop');
-    const [data, setData] = useState<HeatmapData>({});
+    const [data, setData] = useState<{ clicks?: any[], movements?: any[] }>({});
     const [isLoading, setIsLoading] = useState(false);
-    const [showInfo, setShowInfo] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [iframeSize, setIframeSize] = useState({ width: 1280, height: 800 });
 
+    // Fetch Pages on Mount
     useEffect(() => {
-        fetchUrls();
+        fetchPages();
     }, [siteId]);
 
+    // Fetch Data when Page Selected
     useEffect(() => {
-        if (selectedUrl) {
-            fetchHeatmapData();
+        if (selectedPageId) {
+            const page = pages.find(p => p.id === Number(selectedPageId));
+            if (page) {
+                fetchHeatmapData(page.url);
+            }
         }
-    }, [selectedUrl, heatmapType, deviceType]);
+    }, [selectedPageId, heatmapType]);
 
+    // Draw when Data Available
     useEffect(() => {
         if (!canvasRef.current || !data[heatmapType === 'click' ? 'clicks' : 'movements']) return;
         drawHeatmap();
-    }, [data, iframeSize]);
+    }, [data, selectedPageId]); // Re-draw if page changes (image loads)
 
-    const fetchUrls = async () => {
+    const fetchPages = async () => {
         try {
-            const res = await fetch(`/api/heatmap/urls.php?site_id=${siteId}`);
-            const data = await res.json();
-            setUrls(data.urls || []);
-            if (data.urls && data.urls.length > 0) setSelectedUrl(data.urls[0].url);
+            const res = await fetch(`/api/heatmap/pages.php?action=list&site_id=${siteId}`);
+            const json = await res.json();
+            if (json.pages) {
+                setPages(json.pages);
+                if (json.pages.length > 0 && !selectedPageId) {
+                    setSelectedPageId(json.pages[0].id);
+                }
+            }
         } catch (err) {
-            console.error('Failed to fetch URLs:', err);
+            console.error('Failed to fetch pages', err);
         }
     };
 
-    const fetchHeatmapData = async () => {
-        if (!selectedUrl) return;
+    const handleAddPage = async () => {
+        if (!newPageUrl) return;
+        setIsAdding(true);
+        try {
+            const res = await fetch(`/api/heatmap/pages.php?action=add&site_id=${siteId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: newPageUrl, device: 'Desktop' }) // Default to desktop for now
+            });
+            const json = await res.json();
+            if (json.page) {
+                setPages(prev => [json.page, ...prev]);
+                setSelectedPageId(json.page.id);
+                setNewPageUrl('');
+            } else {
+                alert('Hata: ' + (json.error || 'Ekran görüntüsü alınamadı.'));
+            }
+        } catch (err) {
+            alert('Sunucu hatası.');
+        } finally {
+            setIsAdding(false);
+        }
+    };
+
+    const handleDeletePage = async (id: number) => {
+        if (!confirm('Bu sayfayı ve görüntüsünü silmek istediğine emin misin?')) return;
+        try {
+            await fetch(`/api/heatmap/pages.php?action=delete&id=${id}&site_id=${siteId}`, { method: 'DELETE' });
+            setPages(prev => prev.filter(p => p.id !== id));
+            if (selectedPageId === id) setSelectedPageId(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchHeatmapData = async (url: string) => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/heatmap/stats.php?site_id=${siteId}&url=${encodeURIComponent(selectedUrl)}&type=${heatmapType}&device=${deviceType}`);
+            // Fetch ALL data for this URL, regardless of "device" in snapshot, 
+            // but in future we might want to filter by device too.
+            const res = await fetch(`/api/heatmap/stats.php?site_id=${siteId}&url=${encodeURIComponent(url)}&type=${heatmapType}`);
             const jsonData = await res.json();
             setData(jsonData);
         } catch (err) {
-            console.error('Failed to fetch heatmap data:', err);
+            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -69,6 +116,10 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
+        // Ensure canvas matches image size (1280x800 typically from API)
+        // Ideally we read naturalWidth from image, but let's assume standard for now or wait for load
+        // Actually, best way is to set canvas size to parent container which is the image size
+
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx?.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -77,14 +128,15 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
 
         // @ts-ignore
         const heat = simpleheat(canvas);
-        const heatPoints = points.map(p => [p.x, p.y, p.count || 1] as [number, number, number]);
+
+        // Data points: [x, y, count]
+        // Important: Screenshot is usually 1280px wide. 
+        // We map recorded clicks (absolute) to this 1280px canvas.
+        const heatPoints = points.map((p: any) => [p.x, p.y, p.count || 1] as [number, number, number]);
 
         heat.data(heatPoints);
 
         if (heatmapType === 'click') {
-            // Cap max to a reasonable density so single clicks are visible but clusters burn
-            // If we assume raw data (count=1), a cluster of 5 clicks = value 5. 
-            // Setting max to 5 means 5 clicks = RED.
             heat.max(5);
             heat.radius(25, 15);
         } else {
@@ -95,186 +147,131 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
         heat.draw();
     };
 
-    // Listen for resize messages from the tracker (PostMessage)
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            if (event.data && event.data.type === 'SPECTRE_RESIZE' && event.data.height) {
-                // Security check? Ideally check origin, but verify site_id match is enough contextually
-                const height = event.data.height;
-                setIframeSize(prev => ({ ...prev, height: height }));
-                if (canvasRef.current) {
-                    canvasRef.current.height = height;
-                    requestAnimationFrame(drawHeatmap);
-                }
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
-    const handleIframeLoad = () => {
-        // Fallback for same-origin or if tracker not yet active
-        try {
-            if (iframeRef.current?.contentWindow?.document?.body?.scrollHeight) {
-                const height = iframeRef.current.contentWindow.document.body.scrollHeight;
-                setIframeSize(prev => ({ ...prev, height: height || 800 }));
-                if (canvasRef.current) {
-                    canvasRef.current.height = height || 800;
-                    requestAnimationFrame(drawHeatmap);
-                }
-            }
-        } catch (e) {
-            // Expected CORS block, waiting for postMessage
-        }
-    };
+    const selectedPage = pages.find(p => p.id === Number(selectedPageId));
 
     return (
         <div className="space-y-6 h-full flex flex-col">
-            {/* Header Controls */}
+            {/* Header / Controls */}
             <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-start gap-4 max-w-2xl">
                         <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400 mt-1">
                             <Map size={28} />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-bold text-white">Isı Haritası</h1>
+                        <div className="space-y-4 w-full">
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">Snapshot Heatmap</h1>
+                                <p className="text-gray-400 text-sm">Sayfa ekleyin, sistem fotoğrafını çeksin, siz analizi görün.</p>
+                            </div>
+
+                            {/* Page Selection Row */}
+                            <div className="flex gap-2 items-center w-full">
+                                {pages.length > 0 ? (
+                                    <div className="flex-1 max-w-md">
+                                        <select
+                                            value={selectedPageId || ''}
+                                            onChange={(e) => setSelectedPageId(Number(e.target.value))}
+                                            className="bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
+                                        >
+                                            {pages.map(p => (
+                                                <option key={p.id} value={p.id}>{p.url} ({p.device}) - {new Date(p.created_at).toLocaleDateString()}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="text-yellow-400 text-sm flex items-center gap-2 px-3 py-2 bg-yellow-500/10 rounded-lg">
+                                        <Info size={16} />
+                                        Henüz hiç sayfa eklemediniz. Aşağıdan ekleyin.
+                                    </div>
+                                )}
+
+                                {selectedPageId && (
+                                    <button
+                                        onClick={() => handleDeletePage(selectedPageId)}
+                                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Sayfayı Sil"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Add Page Form */}
+                            <div className="flex gap-2 max-w-md">
+                                <input
+                                    type="url"
+                                    placeholder="https://site.com/sayfa"
+                                    value={newPageUrl}
+                                    onChange={(e) => setNewPageUrl(e.target.value)}
+                                    className="flex-1 bg-black/20 border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                                />
                                 <button
-                                    onClick={() => setShowInfo(!showInfo)}
-                                    className="text-gray-400 hover:text-white transition-colors relative"
+                                    onClick={handleAddPage}
+                                    disabled={isAdding || !newPageUrl}
+                                    className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    <Info size={20} />
-                                    {showInfo && (
-                                        <div className="absolute left-full ml-2 top-0 w-64 p-3 bg-gray-900 border border-white/10 rounded-xl text-sm text-gray-300 shadow-xl z-50">
-                                            Bu harita, sayfandaki hangi bölümlerin müşterilerini mıknatıs gibi çektiğini gösterir. Böylece en önemli mesajlarını nereye koyman gerektiğini hemen anlarsın.
-                                        </div>
-                                    )}
+                                    {isAdding ? <RefreshCw size={16} className="animate-spin" /> : <Camera size={16} />}
+                                    {isAdding ? 'Çekiliyor...' : 'Ekle & Çek'}
                                 </button>
                             </div>
-
-                            {/* PROMPT 1: Header Description */}
-                            <p className="text-gray-300 mt-2 text-lg leading-relaxed">
-                                Bu sayfadaki renkli harita, ziyaretçilerin sayfa üzerinde en çok nerelere baktığını ve tıkladığını gösterir.
-                            </p>
-
-                            {/* Mobile specific text */}
-                            <div className="md:hidden mt-2 p-2 bg-white/5 rounded-lg text-sm text-orange-200 flex items-center gap-2">
-                                <span className="text-xl">🔥</span>
-                                Kırmızı yerler en çok tıklanan popüler alanlardır.
-                            </div>
-
-                            <div className="mt-4">
-                                <select
-                                    value={selectedUrl}
-                                    onChange={(e) => setSelectedUrl(e.target.value)}
-                                    className="bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                                >
-                                    {urls.map(item => (
-                                        <option key={item.url} value={item.url}>{item.title}</option>
-                                    ))}
-                                </select>
-                            </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center bg-black/20 p-1 rounded-lg self-end">
-                            <button
-                                onClick={() => setDeviceType('Desktop')}
-                                className={`p-2 rounded-md transition-colors ${deviceType === 'Desktop' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                title="Masaüstü Görünüm"
-                            >
-                                <Monitor size={20} />
-                            </button>
-                            <button
-                                onClick={() => setDeviceType('Mobile')}
-                                className={`p-2 rounded-md transition-colors ${deviceType === 'Mobile' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                title="Mobil Görünüm"
-                            >
-                                <Smartphone size={20} />
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setHeatmapType('click')}
-                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${heatmapType === 'click' ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                            >
-                                Tıklamalar
-                            </button>
-                            <button
-                                onClick={() => setHeatmapType('movement')}
-                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${heatmapType === 'movement' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                            >
-                                Hareketler
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* PROMPT 2: Legend */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <div className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
-                        <span className="text-sm text-gray-200">
-                            <strong>Kırmızı:</strong> Burası yanıyor! 🔥 Ziyaretçilerin en çok ilgilendiği alanlar.
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
-                        <span className="text-sm text-gray-200">
-                            <strong>Sarı:</strong> İlgi görüyor, ziyaretçiler buraya da göz atıyor. 👀
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                        <span className="text-sm text-gray-200">
-                            <strong>Mavi:</strong> Sakin bölgeler, burası daha az dikkat çekiyor. ❄️
-                        </span>
+                    {/* Heatmap Type Toggles */}
+                    <div className="flex gap-2 self-end">
+                        <button
+                            onClick={() => setHeatmapType('click')}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${heatmapType === 'click' ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                        >
+                            Tıklamalar
+                        </button>
+                        <button
+                            onClick={() => setHeatmapType('movement')}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${heatmapType === 'movement' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                        >
+                            Hareketler
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Heatmap Container */}
-            <div className="flex-1 relative bg-white rounded-xl overflow-hidden shadow-2xl border border-white/10 mx-auto transition-all duration-500"
-                style={{
-                    width: deviceType === 'Desktop' ? '100%' : '375px',
-                    maxWidth: deviceType === 'Desktop' ? '1280px' : '375px',
-                    height: '800px'
-                }}
-            >
-                <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-                    <div className="relative" style={{ width: '100%', minHeight: '100%' }}>
-                        <iframe
-                            ref={iframeRef}
-                            src={selectedUrl}
-                            className="w-full border-none bg-white block"
-                            style={{ height: iframeSize.height }}
-                            onLoad={handleIframeLoad}
-                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                        />
-                        <canvas
-                            ref={canvasRef}
-                            width={deviceType === 'Desktop' ? 1280 : 375}
-                            height={iframeSize.height}
-                            className="absolute top-0 left-0 pointer-events-none mix-blend-multiply opacity-80"
-                        />
-                        {isLoading && (
-                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                                <div className="text-white">Yükleniyor...</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            {/* Viewer Display */}
+            <div className="flex-1 relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-white/10 mx-auto transition-all duration-500 w-full max-w-[1280px]">
+                {selectedPage ? (
+                    <div className="relative w-full h-[800px] overflow-y-auto custom-scrollbar">
+                        <div className="relative">
+                            {/* Snapshot Image */}
+                            <img
+                                src={selectedPage.screenshot_path}
+                                alt="Page Snapshot"
+                                className="w-[1280px] block"
+                                onLoad={() => setTimeout(drawHeatmap, 100)} // Redraw when image loads to ensure sizing
+                            />
 
-            {/* PROMPT 4: Footer Action Text */}
-            <div className="glass-panel p-4 rounded-xl text-center">
-                <p className="text-gray-300 text-lg">
-                    💡 Kırmızı alanlarda <strong>'Satın Al'</strong> butonun var mı? Eğer yoksa, önemli butonlarını bu sıcak bölgelere taşıyarak satışlarını artırabilirsin.
-                </p>
+                            {/* Heatmap Overlay */}
+                            <canvas
+                                ref={canvasRef}
+                                width={1280} // Fixed to matches screenshot width used by backend API
+                                height={800} // Dynamic based on image? For now 800 crop
+                                className="absolute top-0 left-0 pointer-events-none mix-blend-multiply opacity-80"
+                            />
+
+                            {isLoading && (
+                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                                    <div className="text-white flex flex-col items-center gap-2">
+                                        <RefreshCw size={32} className="animate-spin text-orange-500" />
+                                        <span>Veriler işleniyor...</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-4">
+                        <Camera size={48} className="opacity-20" />
+                        <p>Analiz etmek için yukarıdan bir sayfa ekleyin.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
