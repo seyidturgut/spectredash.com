@@ -4,6 +4,7 @@ import { Trash2, Plus, Loader2, AlertCircle, Edit2, Ban, CheckCircle, X, Globe, 
 import { clsx } from 'clsx';
 import type { User as AppUser } from '../types';
 import { GoalManager } from './GoalManager';
+import { GoalAnalytics } from './GoalAnalytics';
 
 interface ExtendedUser extends AppUser {
     site_id?: string;
@@ -520,7 +521,11 @@ export const AdminCustomers = () => {
                                         </div>
 
                                         {editingCustomer.site_id ? (
-                                            <GoalManager siteId={editingCustomer.site_id} customerId={editingCustomer.id} />
+                                            <div className="space-y-8">
+                                                <GoalAnalytics siteId={editingCustomer.site_id} />
+                                                <div className="w-full h-px bg-white/10" />
+                                                <GoalManager siteId={editingCustomer.site_id} customerId={editingCustomer.id} />
+                                            </div>
                                         ) : (
                                             <div className="text-red-400">Site ID bulunamadı.</div>
                                         )}

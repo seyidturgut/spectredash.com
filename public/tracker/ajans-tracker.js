@@ -467,9 +467,21 @@
     function enableVisualPicker() {
         console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
 
-        // Capture Return URL
+        // 1. Manage Return URL Persistence
         const params = new URLSearchParams(window.location.search);
-        let returnUrlBase = params.get('return_url') || 'https://spectredash.com/';
+        let returnUrlBase = params.get('return_url');
+
+        if (returnUrlBase) {
+            // New session started, save to storage
+            sessionStorage.setItem('spectre_return_url', returnUrlBase);
+        } else {
+            // Try to recover from storage (in case of redirect)
+            returnUrlBase = sessionStorage.getItem('spectre_return_url');
+        }
+
+        if (!returnUrlBase) {
+            returnUrlBase = 'https://spectredash.com/';
+        }
 
         const style = document.createElement('style');
         style.innerHTML = `
@@ -498,35 +510,56 @@
             const text = (el.innerText || el.value || '').trim();
             let selector = '', type = '';
 
-            // Improved Selector Priority: ID > Text > Class > Tag
+            // --- SMARTER SELECTOR LOGIC ---
+
+            // 1. ID (Best)
             if (el.id) {
                 selector = el.id;
                 type = 'css_id';
-            } else if (text && text.length > 0 && text.length < 50) {
-                // Determine uniqueness of text? For now, if text exists, use it.
-                // It's often more unique than "btn btn-primary"
+            }
+            // 2. Unique Attributes (Name, Alt, Type, Role)
+            else if (el.name) {
+                selector = `[name="${el.name}"]`;
+                type = 'css_class'; // Using class type for generic selector
+            }
+            else if (el.getAttribute('alt')) {
+                selector = `[alt="${el.getAttribute('alt')}"]`;
+                type = 'css_class';
+            }
+            // 3. Text Content (User Preferred)
+            else if (text && text.length > 0 && text.length < 50) {
                 selector = text;
                 type = 'text_contains';
-            } else if (el.classList.length > 0) {
-                selector = '.' + Array.from(el.classList).join('.');
+            }
+            // 4. Combined Class (Tag + Class)
+            else if (el.classList.length > 0) {
+                // Try to find a specific class, not just the first one
+                selector = el.tagName.toLowerCase() + '.' + Array.from(el.classList).join('.');
                 type = 'css_class';
-            } else {
+            }
+            // 5. Parent > Child (if simple)
+            else if (el.parentElement && el.parentElement.id) {
+                selector = `#${el.parentElement.id} > ${el.tagName.toLowerCase()}`;
+                type = 'css_class';
+            }
+            // 6. Fallback
+            else {
                 selector = el.tagName.toLowerCase();
                 type = 'css_class';
             }
 
             const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
             if (confirm(confirmMsg)) {
-                // Return to dashboard
                 try {
                     const dest = new URL(returnUrlBase);
                     dest.searchParams.set('new_selector', selector);
                     dest.searchParams.set('new_type', type);
                     dest.searchParams.set('new_text', text.substring(0, 30));
+
+                    // Clear storage after use? No, keeps it safe.
                     window.location.href = dest.toString();
                 } catch (e) {
                     console.error('Invalid Return URL', e);
-                    // Fallback
                     const fb = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}`;
                     window.location.href = fb;
                 }
