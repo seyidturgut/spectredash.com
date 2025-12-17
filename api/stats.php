@@ -49,10 +49,28 @@ if (is_array($res) && isset($res['error'])) {
 }
 
 // 2. Live Users
-// Attempt with sessions table. If it fails (missing table/column), log it and return 0.
-$res = safeQuery($db, "SELECT COUNT(*) as count FROM sessions WHERE site_id = ? AND last_activity >= NOW() - INTERVAL 5 MINUTE", "s", [$site_id]);
+// Logic: Count unique session_ids from both page views (ziyaretler) and actions (events) in the last 5 minutes.
+// This is more robust than relying on the 'sessions' table which might be out of sync.
+$sql_live = "
+    SELECT COUNT(DISTINCT session_id) as count 
+    FROM (
+        SELECT session_id FROM ziyaretler WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE
+        UNION
+        SELECT session_id FROM events WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE
+    ) as active_pool
+";
+
+$res = safeQuery($db, $sql_live, "ss", [$site_id, $site_id]);
+
 if (is_array($res) && isset($res['error'])) {
-    $response['debug_log'][] = "Live Users Error: " . $res['error'];
+    // If the complex query fails (e.g. events table missing), fallback to simple ziyaretler count
+    $res_fallback = safeQuery($db, "SELECT COUNT(DISTINCT session_id) as count FROM ziyaretler WHERE site_id = ? AND created_at >= NOW() - INTERVAL 5 MINUTE", "s", [$site_id]);
+    if (is_array($res_fallback) && isset($res_fallback['error'])) {
+        $response['debug_log'][] = "Live Users Error (Fallback): " . $res_fallback['error'];
+    } else {
+        $row = $res_fallback->fetch_assoc();
+        $response['live_users'] = (int) ($row['count'] ?? 0);
+    }
 } else {
     $row = $res->fetch_assoc();
     $response['live_users'] = (int) ($row['count'] ?? 0);
