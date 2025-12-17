@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import type { User } from '../types';
 import { AiHeaderButton } from '../components/AiHeaderButton';
 import { AiSummaryModal } from '../components/AiSummaryModal';
+import { LiveUserBadge } from '../components/LiveUserBadge';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -11,9 +12,10 @@ interface DashboardLayoutProps {
     onNavigate: (view: 'dashboard' | 'settings' | 'admin_sites') => void;
     user: User | null;
     onLogout: () => void;
+    liveUserCount: number;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeView, onNavigate, user, onLogout }) => {
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeView, onNavigate, user, onLogout, liveUserCount }) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
@@ -65,7 +67,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
             />
 
             {/* Mobile Header Trigger */}
-            <div className="lg:hidden absolute top-6 right-6 z-30 flex gap-3">
+            <div className="lg:hidden absolute top-6 right-6 z-30 flex gap-3 items-center">
+                <LiveUserBadge count={liveUserCount} />
                 <AiHeaderButton onClick={handleAiAnalyze} isLoading={aiLoading} />
                 <button
                     onClick={() => setIsMobileOpen(true)}
@@ -76,7 +79,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
             </div>
 
             {/* Desktop Header Actions (Absolute Top Right) */}
-            <div className="hidden lg:block absolute top-8 right-8 z-30">
+            <div className="hidden lg:flex absolute top-8 right-8 z-30 items-center gap-4">
+                <LiveUserBadge count={liveUserCount} />
                 <AiHeaderButton onClick={handleAiAnalyze} isLoading={aiLoading} />
             </div>
 

@@ -179,6 +179,7 @@ function App() {
         onNavigate={setActiveView as any}
         user={user}
         onLogout={handleLogout}
+        liveUserCount={stats.liveUserCount}
       >
 
         {/* CLIENT VIEW: DASHBOARD */}
