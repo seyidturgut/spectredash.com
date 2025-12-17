@@ -26,15 +26,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
         setAiLoading(true);
         setAiInsight(null);
 
-        // Get Site ID - ideally from context, here assuming we analyze the main/first site available to the user
-        // Or if 'user' object has a 'site_id'.
-        // For this user (Seyid), let's assume valid credentials/site context in session or hardcoded for 'default'/current logic
-        // We'll trust the API to handle the 'current' site if site_id is missing?
-        // Actually, let's check localStorage or URL params.
-        // Fallback: If no specific site selected, API might error. 
-        // Let's try to get it from URL or a store.
-        const urlParams = new URLSearchParams(window.location.search);
-        const siteId = urlParams.get('site_id') || 'default'; // Adjust as needed
+        // Get Site ID from User Prop
+        const siteId = user?.site_id;
+
+        if (!siteId) {
+            setAiInsight("Hata: Site ID bulunamadı. Lütfen giriş yaptığınızdan emin olun.");
+            setAiLoading(false);
+            return;
+        }
 
         try {
             const res = await fetch('/api/analyze.php', { // Ensure .php extension if needed

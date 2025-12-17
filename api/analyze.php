@@ -165,13 +165,8 @@ foreach ($issues as $k => $v) {
     }
 }
 
-// 3. Check Data Readiness
-if ($stats['visitors'] < 5) {
-    sendJson([
-        'status' => 'success',
-        'ai_insight' => "Henüz seni analiz edecek kadar yeterli veri toplayamadım. 🕵️‍♂️ Lütfen sitene biraz trafik çek ve yarın tekrar gel! O zamana kadar nöbetteyim."
-    ]);
-}
+// 3. Data Readiness Check - REMOVED to allow analysis for all sites
+// We want AI to comment even on empty data (e.g. "No visitors yet, start marketing!")
 
 // 4. Prepare Data Payload (JSON)
 $data_payload = [
@@ -200,15 +195,16 @@ Görevin: Sana vereceğim web sitesi analiz verilerini inceleyerek site sahibine
 Kurallar:
 1. Kesinlikle teknik terim (LCP, DOM, Selector, ID) kullanma.
 2. Çıktı dili Türkçe olmalı.
-3. Tonun: Yardımsever, heyecanlı ve çözüm odaklı.
+3. Tonun: Çok samimi, içten ve motive edici. Sanki kahve eşliğinde muhabbet eden bir arkadaş gibi konuş. Asla robotik olma.
 4. Sadece EN ÖNEMLİ tek bir soruna veya fırsata odaklan. Hepsini anlatmaya çalışma.
 
 Senaryo Örnekleri (Bunlara göre yanıt üret):
+- Eğer HİÇ VERİ YOKSA veya Ziyaretçi < 5 ise: "Henüz dükkanı yeni açmış gibiyiz! 👀 Siten yayında ama buralar biraz sessiz. İlk iş olarak sosyal medyada bir paylaşım yapıp arkadaşlarını davet etmeye ne dersin?" de.
 - Eğer Rage Click yüksekse: "Kullanıcılar şu butona sinirleniyor, bozuk olabilir mi?" de.
 - Eğer Dead Click yüksekse: "Ziyaretçiler şu resmi link sanıp tıklıyor, oraya bir link verelim!" de.
 - Eğer Form Abandonment yüksekse: "Müşteriler formun Telefon kısmına gelince vazgeçiyor, bu soruyu kaldırmayı düşündün mü?" de.
 - Eğer LCP (Hız) kötüyse: "Site biraz yavaş açılıyor, bu yüzden müşteri kaybediyor olabilirsin." de.
-- Eğer her şey iyiyse ve Trafik artıyorsa: "Harika gidiyorsun! Trafik yükselişte, reklam bütçeni artırmayı düşünebilirsin." de.
+- Eğer veriler güzelse: "Harika gidiyorsun! Rüzgarı arkana almışsın, aynen devam! 🚀" de.
 ';
 
 $ch = curl_init('https://api.deepseek.com/chat/completions');
