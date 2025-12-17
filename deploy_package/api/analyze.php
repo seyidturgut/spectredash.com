@@ -241,8 +241,13 @@ $curl_error = curl_error($ch);
 curl_close($ch);
 
 if ($curl_error || $http_code !== 200) {
-    // Fallback message with debug hint (hidden from user ideally but useful for now)
-    $advice = "Şu an bağlantıda ufak bir pürüz var! 📡 (Kod: {$http_code}). Ama verilerin güvende, birazdan tekrar deneyebiliriz.";
+    if ($http_code === 402) {
+        $advice = "AI servis sağlayıcısında bakiye yetersiz görünüyor. (Kod: 402). Lütfen DeepSeek bakiyenizi kontrol edin.";
+    } elseif ($http_code === 401) {
+        $advice = "API anahtarı hatalı veya süresi dolmuş. (Kod: 401). Ayarları kontrol edin.";
+    } else {
+        $advice = "Şu an bağlantıda ufak bir pürüz var! 📡 (Kod: {$http_code}). Ama verilerin güvende, birazdan tekrar deneyebiliriz.";
+    }
 } else {
     $ai_data = json_decode($response, true);
     $advice = $ai_data['choices'][0]['message']['content'] ?? "Analiz oluşturulamadı. (Yanıt boş)";
