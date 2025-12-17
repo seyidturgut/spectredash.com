@@ -22,8 +22,9 @@ if (!defined('DB_NAME'))
     define('DB_NAME', 'spectre');
 
 // AI Configuration
-if (!defined('DEEPSEEK_API_KEY'))
-    define('DEEPSEEK_API_KEY', '');
+if (!defined('GEMINI_API_KEY')) {
+    define('GEMINI_API_KEY', '');
+}
 
 // Create connection
 function getDB()
