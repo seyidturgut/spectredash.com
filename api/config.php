@@ -22,8 +22,8 @@ if (!defined('DB_NAME'))
     define('DB_NAME', 'spectre');
 
 // AI Configuration
-if (!defined('GEMINI_API_KEY')) {
-    define('GEMINI_API_KEY', '');
+if (!defined('OPENROUTER_API_KEY')) {
+    define('OPENROUTER_API_KEY', '');
 }
 
 // Create connection

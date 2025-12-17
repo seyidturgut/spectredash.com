@@ -8,8 +8,8 @@ if (empty($site_id)) {
     sendJson(['error' => 'Missing site_id'], 400);
 }
 
-if (empty(DEEPSEEK_API_KEY)) {
-    sendJson(['error' => 'DeepSeek API Key is missing in config'], 500);
+if (empty(OPENROUTER_API_KEY)) {
+    sendJson(['error' => 'OpenRouter API Key is missing in config'], 500);
 }
 
 $db = getDB();
@@ -165,8 +165,6 @@ foreach ($issues as $k => $v) {
     }
 }
 
-// 3. Data Readiness Check - REMOVED to allow analysis for all sites
-// We want AI to comment even on empty data (e.g. "No visitors yet, start marketing!")
 
 // 4. Prepare Professional Data Payload (English Keys for AI Clarity)
 $data_payload = [
@@ -199,7 +197,7 @@ $data_payload = [
 
 $user_message = json_encode($data_payload, JSON_PRETTY_PRINT);
 
-// 5. Call DeepSeek API
+// 5. Call OpenRouter AI API
 $system_prompt = '
 You are "Spectre AI", a friendly and highly experienced UX & Digital Growth Analyst.
 Your Goal: Analyze the provided JSON data and give ONE single, high-impact advice to the site owner in TURKISH.
@@ -218,21 +216,25 @@ Instructions:
 3. Output ONLY the Turkish advice paragraph. No technical jargon.
 ';
 
-$ch = curl_init('https://api.deepseek.com/chat/completions');
+$ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 30); // Extended timeout
+curl_setopt($ch, CURLOPT_TIMEOUT, 40); // Generous timeout
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json',
-    'Authorization: Bearer ' . DEEPSEEK_API_KEY
+    'Authorization: Bearer ' . OPENROUTER_API_KEY,
+    'HTTP-Referer: https://spectre-analytics.com', // Required by OpenRouter
+    'X-Title: Spectre Analytics'
 ]);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-    'model' => 'deepseek-chat',
+    'model' => 'google/gemini-2.0-flash-exp:free', // Use the free, high quality model
     'messages' => [
         ['role' => 'system', 'content' => $system_prompt],
         ['role' => 'user', 'content' => $user_message]
     ],
-    'temperature' => 1.1 // Slightly creative
+    'temperature' => 1.0,
+    'top_p' => 1,
+    'repetition_penalty' => 1
 ]));
 
 $response = curl_exec($ch);
@@ -242,11 +244,11 @@ curl_close($ch);
 
 if ($curl_error || $http_code !== 200) {
     if ($http_code === 402) {
-        $advice = "AI servis sağlayıcısında bakiye yetersiz görünüyor. (Kod: 402). Lütfen DeepSeek bakiyenizi kontrol edin.";
+        $advice = "Bakiye sorunu (Kod: 402). OpenRouter ücretsiz model limitine takılmış olabilir.";
     } elseif ($http_code === 401) {
-        $advice = "API anahtarı hatalı veya süresi dolmuş. (Kod: 401). Ayarları kontrol edin.";
+        $advice = "API anahtarı hatası (Kod: 401). Yapılandırmayı kontrol edin.";
     } else {
-        $advice = "Şu an bağlantıda ufak bir pürüz var! 📡 (Kod: {$http_code}). Ama verilerin güvende, birazdan tekrar deneyebiliriz.";
+        $advice = "AI bağlantısında ufak bir pürüz var! 📡 (Kod: {$http_code}). Birazdan tekrar deneyin.";
     }
 } else {
     $ai_data = json_decode($response, true);
