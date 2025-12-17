@@ -1,3 +1,4 @@
+<?php
 // CRASH-DEBUFF: Turn off screen errors to prevent "Unexpected end of JSON"
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
