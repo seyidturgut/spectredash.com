@@ -2,8 +2,13 @@
 // CRASH-DEBUFF: Turn off screen errors to prevent "Unexpected end of JSON"
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
+date_default_timezone_set('Europe/Istanbul');
 
 require_once __DIR__ . '/config.php';
+
+// Force MySQL Timezone to match PHP
+$db = getDB();
+$db->query("SET time_zone = '+03:00';");
 
 // Prepare default response structure (Safe Mode)
 $response = [
