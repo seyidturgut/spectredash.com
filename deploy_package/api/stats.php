@@ -113,8 +113,21 @@ if (!is_array($res) || !isset($res['error'])) {
 // 6. Traffic Chart
 // Initialize empty chart
 for ($i = 6; $i >= 0; $i--) {
-    $date = date('Y-m-d', strtotime("-$i days"));
-    $response['traffic_chart'][] = ['date' => $date, 'visits' => 0];
+// 6. Traffic Chart
+$days_tr = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']; // date('w') 0=Sunday
+ 
+// Initialize chart with last 7 days (including today)
+for ($i = 6; $i >= 0; $i--) {
+    $ts = strtotime("-$i days");
+    $date = date('Y-m-d', $ts);
+    $day_index = (int) date('w', $ts);
+    $day_name = $days_tr[$day_index];
+    
+    $response['traffic_chart'][] = [
+        'name' => $day_name, 
+        'date' => $date, // Kept for matching
+        'visits' => 0
+    ];
 }
 
 $res = safeQuery($db, "
@@ -136,6 +149,7 @@ if (!is_array($res) || !isset($res['error'])) {
             $point['visits'] = (int) $data_map[$point['date']];
         }
     }
+    // Clean up 'date' key if strictly needed, but React won't mind extra keys
 }
 
 // ALWAYS return JSON, even if empty. Never 500.
