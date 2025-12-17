@@ -52,7 +52,12 @@
      * Uses Lightweight Fingerprinting + Daily Salt
      */
     async function generateSessionId(salt) {
-        if (!salt) return 'sess_anon_' + Date.now(); // Fallback if config fails
+        // 1. Check LocalStorage First
+        const stored = localStorage.getItem('spectre_session_id');
+        if (stored) return stored;
+
+        // 2. Generate New ID
+        if (!salt) salt = 'sess_anon_' + Date.now(); // Fallback
 
         // Privacy Components
         const components = [
@@ -64,21 +69,27 @@
         ].join('|');
 
         // Simple Hash (SHA-256 substitute for speed/size if Web Crypto API is available, else simple hash)
-        // Using Web Crypto API for secure hashing
+        let hashHex;
         try {
             const msgBuffer = new TextEncoder().encode(components);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return 'sess_' + hashHex.substring(0, 16); // Shorten for DB (first 16 chars)
+            hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         } catch (e) {
             // Fallback for older browsers (djb2 variant)
             let hash = 5381;
             for (let i = 0; i < components.length; i++) {
                 hash = ((hash << 5) + hash) + components.charCodeAt(i);
             }
-            return 'sess_' + (hash >>> 0).toString(16);
+            hashHex = (hash >>> 0).toString(16);
         }
+
+        const newId = 'sess_' + hashHex.substring(0, 16);
+
+        // 3. Save to LocalStorage
+        localStorage.setItem('spectre_session_id', newId);
+
+        return newId;
     }
 
     function sendToAPI(path, data) {
