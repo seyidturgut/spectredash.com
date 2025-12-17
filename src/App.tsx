@@ -257,18 +257,37 @@ function App() {
         {activeView === 'settings' && <SettingsPage user={user} />}
 
         {/* ANALYTICS: GOALS */}
-        {activeView === 'goals' && user.site_id && (
-          <GoalAnalytics siteId={user.site_id} />
+        {activeView === 'goals' && (
+          user.site_id ? (
+            <GoalAnalytics siteId={user.site_id} />
+          ) : (
+            <div className="glass-panel p-10 text-center text-gray-400">
+              <p>Hata: Bu hesap için bir Site ID tanımlanmamış. Lütfen yönetici ile iletişime geçin.</p>
+              <button onClick={handleLogout} className="mt-4 text-sm text-red-400 hover:text-red-300">Güvenli Çıkış</button>
+            </div>
+          )
         )}
 
         {/* ANALYTICS: EVENTS */}
-        {activeView === 'events' && user.site_id && (
-          <EventAnalytics siteId={user.site_id} />
+        {activeView === 'events' && (
+          user.site_id ? (
+            <EventAnalytics siteId={user.site_id} />
+          ) : (
+            <div className="glass-panel p-10 text-center text-gray-400">
+              <p>Hata: Bu hesap için bir Site ID tanımlanmamış. Lütfen yönetici ile iletişime geçin.</p>
+            </div>
+          )
         )}
 
         {/* ANALYTICS: HEATMAP */}
-        {activeView === 'heatmap' && user.site_id && (
-          <HeatmapViewer siteId={user.site_id} />
+        {activeView === 'heatmap' && (
+          user.site_id ? (
+            <HeatmapViewer siteId={user.site_id} />
+          ) : (
+            <div className="glass-panel p-10 text-center text-gray-400">
+              <p>Hata: Bu hesap için bir Site ID tanımlanmamış. Lütfen yönetici ile iletişime geçin.</p>
+            </div>
+          )
         )}
 
       </DashboardLayout>
