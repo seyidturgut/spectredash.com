@@ -47,6 +47,23 @@ export const AdminCustomers = () => {
         return () => clearInterval(interval);
     }, []);
 
+    // Auto-open modal if returning from Visual Picker
+    useEffect(() => {
+        if (customers.length > 0) {
+            const params = new URLSearchParams(window.location.search);
+            const editId = params.get('edit_customer_id');
+            const openGoals = params.get('new_selector');
+
+            if (editId) {
+                const customer = customers.find(c => c.id === Number(editId));
+                if (customer) {
+                    setEditingCustomer(customer);
+                    if (openGoals) setEditTab('goals');
+                }
+            }
+        }
+    }, [customers]);
+
     const fetchCustomers = async () => {
         try {
             const res = await fetch('/api/customers/index.php');
@@ -503,7 +520,7 @@ export const AdminCustomers = () => {
                                         </div>
 
                                         {editingCustomer.site_id ? (
-                                            <GoalManager siteId={editingCustomer.site_id} />
+                                            <GoalManager siteId={editingCustomer.site_id} customerId={editingCustomer.id} />
                                         ) : (
                                             <div className="text-red-400">Site ID bulunamadı.</div>
                                         )}

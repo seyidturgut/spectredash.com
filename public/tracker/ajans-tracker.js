@@ -467,6 +467,10 @@
     function enableVisualPicker() {
         console.log('%c 🎯 SPECTRE VISUAL PICKER ACTIVE ', 'background: #7c3aed; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
 
+        // Capture Return URL
+        const params = new URLSearchParams(window.location.search);
+        let returnUrlBase = params.get('return_url') || 'https://spectredash.com/';
+
         const style = document.createElement('style');
         style.innerHTML = `
             .spectre-picker-highlight { outline: 2px solid #ec4899 !important; cursor: crosshair !important; position: relative; }
@@ -491,12 +495,18 @@
             e.stopPropagation();
 
             const el = e.target;
-            const text = el.innerText || el.value || '';
+            const text = (el.innerText || el.value || '').trim();
             let selector = '', type = '';
 
+            // Improved Selector Priority: ID > Text > Class > Tag
             if (el.id) {
                 selector = el.id;
                 type = 'css_id';
+            } else if (text && text.length > 0 && text.length < 50) {
+                // Determine uniqueness of text? For now, if text exists, use it.
+                // It's often more unique than "btn btn-primary"
+                selector = text;
+                type = 'text_contains';
             } else if (el.classList.length > 0) {
                 selector = '.' + Array.from(el.classList).join('.');
                 type = 'css_class';
@@ -508,8 +518,18 @@
             const confirmMsg = `Bu öğeyi seç? \n\nTip: ${type}\nSeçici: ${selector}\nMetin: ${text.substring(0, 20)}`;
             if (confirm(confirmMsg)) {
                 // Return to dashboard
-                const returnUrl = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}&new_text=${encodeURIComponent(text.substring(0, 30))}`;
-                window.location.href = returnUrl;
+                try {
+                    const dest = new URL(returnUrlBase);
+                    dest.searchParams.set('new_selector', selector);
+                    dest.searchParams.set('new_type', type);
+                    dest.searchParams.set('new_text', text.substring(0, 30));
+                    window.location.href = dest.toString();
+                } catch (e) {
+                    console.error('Invalid Return URL', e);
+                    // Fallback
+                    const fb = `https://spectredash.com/?new_selector=${encodeURIComponent(selector)}&new_type=${type}`;
+                    window.location.href = fb;
+                }
             }
         }, true);
     }

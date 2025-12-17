@@ -12,9 +12,10 @@ interface GoalDefinition {
 
 interface GoalManagerProps {
     siteId: string;
+    customerId: number;
 }
 
-export const GoalManager = ({ siteId }: GoalManagerProps) => {
+export const GoalManager = ({ siteId, customerId }: GoalManagerProps) => {
     const [goals, setGoals] = useState<GoalDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +113,12 @@ export const GoalManager = ({ siteId }: GoalManagerProps) => {
         // Append param
         const urlObj = new URL(visualUrl.startsWith('http') ? visualUrl : `https://${visualUrl}`);
         urlObj.searchParams.set('spectre_mode', 'picker');
+
+        // Pass Return URL with Customer ID to re-open modal
+        const returnUrl = new URL(window.location.href);
+        returnUrl.searchParams.set('edit_customer_id', customerId.toString());
+        urlObj.searchParams.set('return_url', returnUrl.toString());
+
         window.open(urlObj.toString(), '_blank');
         setShowUrlInput(false);
     };
