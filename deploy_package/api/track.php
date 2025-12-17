@@ -59,7 +59,12 @@ if ($result->num_rows === 0) {
 }
 
 // Insert visit
-$stmt = $db->prepare("INSERT INTO ziyaretler (site_id, session_id, url, page_title, referrer, device, is_bot, page_load_time, viewport_width, viewport_height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+$query = "INSERT INTO ziyaretler (site_id, session_id, url, page_title, referrer, device, is_bot, page_load_time, viewport_width, viewport_height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$stmt = $db->prepare($query);
+if (!$stmt) {
+    // Log error but don't crash client significantly, return 500 with message
+    die(json_encode(['error' => 'Visit Insert Failed: ' . $db->error]));
+}
 $stmt->bind_param("ssssssiiii", $site_id, $session_id, $url, $page_title, $referrer, $device, $is_bot, $page_load_time, $viewport_width, $viewport_height);
 $stmt->execute();
 
@@ -70,7 +75,12 @@ $stmt->execute();
 
 // Update or create session
 if (!empty($session_id)) {
-    $stmt = $db->prepare("INSERT INTO sessions (site_id, session_id, page_views, is_bot, device) VALUES (?, ?, 1, ?, ?) ON DUPLICATE KEY UPDATE last_activity = NOW(), page_views = page_views + 1");
+    $query = "INSERT INTO sessions (site_id, session_id, page_views, is_bot, device) VALUES (?, ?, 1, ?, ?) ON DUPLICATE KEY UPDATE last_activity = NOW(), page_views = page_views + 1";
+    $stmt = $db->prepare($query);
+    if (!$stmt) {
+        // Return error to help debug
+        die(json_encode(['error' => 'Session Update Failed: ' . $db->error]));
+    }
     $stmt->bind_param("ssis", $site_id, $session_id, $is_bot, $device);
     $stmt->execute();
 }

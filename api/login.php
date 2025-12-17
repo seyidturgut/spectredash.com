@@ -29,16 +29,7 @@ if (!password_verify($password, $user['password_hash'])) {
     sendJson(['error' => 'Invalid credentials'], 401);
 }
 
-$site_id = null;
-if ($user['role'] === 'client') {
-    $stmt = $db->prepare("SELECT site_id FROM sites WHERE user_id = ? LIMIT 1");
-    $stmt->bind_param("i", $user['id']);
-    $stmt->execute();
-    $siteResult = $stmt->get_result();
-    if ($siteResult->num_rows > 0) {
-        $site_id = $siteResult->fetch_assoc()['site_id'];
-    }
-}
+$site_id = $user['site_id']; // Directly use site_id from users table
 
 sendJson([
     'message' => 'Login successful',
