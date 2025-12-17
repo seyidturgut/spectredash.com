@@ -30,7 +30,7 @@ export const GoalsCard: React.FC<GoalsCardProps> = ({ goals = [] }) => {
                     </div>
                     <div>
                         <h3 className="text-base font-semibold text-white">Hedefler</h3>
-                        <p className="text-xs text-gray-400">Tamamlanan Hedefler</p>
+                        <p className="text-xs text-gray-400">Aktif Hedefler</p>
                     </div>
                 </div>
             </div>

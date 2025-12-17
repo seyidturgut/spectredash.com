@@ -77,15 +77,18 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
 
         // @ts-ignore
         const heat = simpleheat(canvas);
-        const heatPoints = points.map(p => [p.x, p.y, p.count] as [number, number, number]);
+        const heatPoints = points.map(p => [p.x, p.y, p.count || 1] as [number, number, number]);
 
         heat.data(heatPoints);
 
         if (heatmapType === 'click') {
-            heat.max(Math.max(...points.map(p => p.count)));
+            // Cap max to a reasonable density so single clicks are visible but clusters burn
+            // If we assume raw data (count=1), a cluster of 5 clicks = value 5. 
+            // Setting max to 5 means 5 clicks = RED.
+            heat.max(5);
             heat.radius(25, 15);
         } else {
-            heat.max(Math.max(...points.map(p => p.count)));
+            heat.max(10);
             heat.radius(15, 10);
         }
 
