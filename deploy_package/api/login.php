@@ -51,10 +51,22 @@ try {
     // Check if site_id column exists in the row
     $site_id = isset($user['site_id']) ? $user['site_id'] : null;
 
-    // If site_id is null and it's a client, try to find it in sites table (legacy support)
+    // If site_id is missing (common, as creation logic uses sites.user_id), fetch it from sites table
     if (empty($site_id) && $user['role'] === 'client') {
-        $stmt_legacy = $db->prepare("SELECT site_id FROM sites WHERE id = ? LIMIT 1"); // Assuming joined by ID for now, but really we rely on users.site_id
-        // Actually, let's stick to just users.site_id as intended. If it's missing, it's missing.
+        try {
+            $stmt_site = $db->prepare("SELECT site_id FROM sites WHERE user_id = ? LIMIT 1");
+            if ($stmt_site) {
+                $stmt_site->bind_param("i", $user['id']);
+                $stmt_site->execute();
+                $res_site = $stmt_site->get_result();
+                if ($row_site = $res_site->fetch_assoc()) {
+                    $site_id = $row_site['site_id'];
+                }
+            }
+        } catch (Exception $e) {
+            // Silently fail if column doesn't exist, though it should based on creation logic
+            error_log("Site Lookup Failed: " . $e->getMessage());
+        }
     }
 
     sendJson([
