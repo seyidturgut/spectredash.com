@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { StatCards } from './components/StatCards';
 import { GoalsCard } from './components/GoalsCard';
+import { PopularPages } from './components/PopularPages';
 import { LiveVisitorFeed } from './components/LiveVisitorFeed';
 import { DeviceStats } from './components/DeviceStats';
 import { AdminCustomers } from './components/AdminCustomers';
@@ -26,6 +27,7 @@ function App() {
 
   // Goals Data for Overview
   const [goalsData, setGoalsData] = useState<{ goal_name: string, count: number }[]>([]);
+  const [popularPages, setPopularPages] = useState<any[]>([]);
 
   const [visitors, setVisitors] = useState<Visitor[]>([]);
 
@@ -108,6 +110,10 @@ function App() {
       // Update Goals
       if (data.goals_overview) {
         setGoalsData(data.goals_overview);
+      }
+
+      if (data.popular_pages) {
+        setPopularPages(data.popular_pages);
       }
 
       // Update Feed
@@ -209,9 +215,13 @@ function App() {
             <StatCards stats={stats} />
 
             {/* Charts Row */}
+            {/* Charts Row - 3 Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-              <div className="lg:col-span-2 h-full">
+              <div className="lg:col-span-1 h-full">
                 <GoalsCard goals={goalsData} totalVisits={stats.totalVisits} />
+              </div>
+              <div className="lg:col-span-1 h-full">
+                <PopularPages pages={popularPages} />
               </div>
               <div className="lg:col-span-1 h-full">
                 <DeviceStats data={deviceData} />

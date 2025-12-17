@@ -451,7 +451,7 @@
                 const height = document.body.scrollHeight;
                 window.parent.postMessage({ type: 'SPECTRE_RESIZE', height: height }, '*');
             }
-        }, 30000);
+        }, 5000);
 
         // Initial resize
         if (window.self !== window.top) {

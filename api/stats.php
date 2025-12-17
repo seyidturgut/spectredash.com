@@ -79,10 +79,9 @@ created_at >= NOW() - INTERVAL 5 MINUTE", "s", [$site_id]);
 
 // 3. Average Duration
 $res = safeQuery($db, "
-SELECT AVG(TIMESTAMPDIFF(SECOND, created_at, last_activity)) as avg_duration
+SELECT AVG(TIMESTAMPDIFF(SECOND, first_visit, last_activity)) as avg_duration
 FROM sessions
 WHERE site_id = ?
-AND last_activity > created_at
 AND created_at >= NOW() - INTERVAL 30 DAY
 ", "s", [$site_id]);
 
@@ -92,6 +91,12 @@ if (is_array($res) && isset($res['error'])) {
     $row = $res->fetch_assoc();
     $avg = (int) ($row['avg_duration'] ?? 0);
     $response['average_duration'] = floor($avg / 60) . 'dk ' . ($avg % 60) . 'sn';
+}
+
+// 7. Popular Pages
+$res = safeQuery($db, "SELECT page_title, url, COUNT(*) as count FROM ziyaretler WHERE site_id = ? GROUP BY url ORDER BY count DESC LIMIT 7", "s", [$site_id]);
+if (!is_array($res) || !isset($res['error'])) {
+    $response['popular_pages'] = $res->fetch_all(MYSQLI_ASSOC);
 }
 
 // 4. Devices
