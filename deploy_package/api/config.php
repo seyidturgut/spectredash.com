@@ -30,13 +30,23 @@ function getDB()
 {
     static $conn = null;
     if ($conn === null) {
-        $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-        if ($conn->connect_error) {
-            error_log("Connection failed: " . $conn->connect_error);
+        try {
+            // Suppress warnings to handle them via try-catch/connect_error
+            $driver = new mysqli_driver();
+            $driver->report_mode = MYSQLI_REPORT_OFF;
+
+            $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+            if ($conn->connect_error) {
+                throw new Exception($conn->connect_error);
+            }
+            $conn->set_charset('utf8mb4');
+        } catch (Exception $e) {
+            error_log("Database Connection Failed: " . $e->getMessage());
+            // Return JSON error and stop
             http_response_code(500);
-            die(json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]));
+            die(json_encode(['error' => 'Database connection failed (Check credentials): ' . $e->getMessage()]));
         }
-        $conn->set_charset('utf8mb4');
     }
     return $conn;
 }
