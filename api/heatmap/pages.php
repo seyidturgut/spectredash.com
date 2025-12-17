@@ -64,7 +64,41 @@ if ($method === 'POST' && $action === 'add') {
     curl_close($ch);
 
     if ($imageContent && $httpCode === 200) {
-        file_put_contents($filePath, $imageContent);
+        $finalImage = $imageContent;
+
+        // --- TinyPNG Optimization (Compression) ---
+        if (defined('TINYPNG_API_KEY') && !empty(TINYPNG_API_KEY)) {
+            $tiny = curl_init("https://api.tinify.com/shrink");
+            curl_setopt($tiny, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($tiny, CURLOPT_USERPWD, "api:" . TINYPNG_API_KEY);
+            curl_setopt($tiny, CURLOPT_POSTFIELDS, $imageContent);
+            curl_setopt($tiny, CURLOPT_SSL_VERIFYPEER, false);
+
+            $tinyResponse = curl_exec($tiny);
+            $tinyCode = curl_getinfo($tiny, CURLINFO_HTTP_CODE);
+            curl_close($tiny);
+
+            if ($tinyCode === 201) {
+                $tinyJson = json_decode($tinyResponse, true);
+                if (isset($tinyJson['output']['url'])) {
+                    // Download the optimized image
+                    // We use curl again for robustness on shared hosting
+                    $dl = curl_init($tinyJson['output']['url']);
+                    curl_setopt($dl, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($dl, CURLOPT_SSL_VERIFYPEER, false);
+                    $compressedContent = curl_exec($dl);
+                    $dlCode = curl_getinfo($dl, CURLINFO_HTTP_CODE);
+                    curl_close($dl);
+
+                    if ($compressedContent && $dlCode === 200) {
+                        $finalImage = $compressedContent;
+                    }
+                }
+            }
+        }
+        // ------------------------------------------
+
+        file_put_contents($filePath, $finalImage);
         $publicPath = '/uploads/screenshots/' . $fileName;
 
         // 3. Save to DB
@@ -73,7 +107,7 @@ if ($method === 'POST' && $action === 'add') {
 
         if ($stmt->execute()) {
             sendJson([
-                'message' => 'Page added and screenshot captured',
+                'message' => 'Page added and screenshot captured (Compressed)',
                 'page' => [
                     'id' => $stmt->insert_id,
                     'url' => $url,
