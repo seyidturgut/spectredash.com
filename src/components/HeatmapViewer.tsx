@@ -23,6 +23,7 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
     const [heatmapType, setHeatmapType] = useState<'click' | 'movement'>('click');
     const [data, setData] = useState<{ clicks?: any[], movements?: any[] }>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [canvasHeight, setCanvasHeight] = useState(800);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -245,14 +246,14 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
                                 src={selectedPage.screenshot_path}
                                 alt="Page Snapshot"
                                 className="w-[1280px] block"
-                                onLoad={() => setTimeout(drawHeatmap, 100)} // Redraw when image loads to ensure sizing
+                                onLoad={(e) => { setCanvasHeight(e.currentTarget.clientHeight); setTimeout(drawHeatmap, 100); }} // Redraw when image loads to ensure sizing
                             />
 
                             {/* Heatmap Overlay */}
                             <canvas
                                 ref={canvasRef}
                                 width={1280} // Fixed to matches screenshot width used by backend API
-                                height={800} // Dynamic based on image? For now 800 crop
+                                height={canvasHeight} // Dynamic based on image? For now 800 crop
                                 className="absolute top-0 left-0 pointer-events-none mix-blend-multiply opacity-80"
                             />
 

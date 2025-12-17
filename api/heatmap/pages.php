@@ -40,14 +40,30 @@ if ($method === 'POST' && $action === 'add') {
 
     // Using screenshotapi.net or similar would be better, but thum.io is instant for demo
     // Pro solution: Use a real node service. Here we rely on public gateway.
-    $apiUrl = "https://image.thum.io/get/width/$width/crop/$height/noanimate/" . $url;
+    // CHANGED: Use 'fullpage' and added 'wait/3' to ensure lazy loaded content appears
+    $apiUrl = "https://image.thum.io/get/width/$width/fullpage/wait/3/noanimate/" . $url;
 
     $fileName = 'snap_' . md5($url . time()) . '.jpg';
     $filePath = $uploadDir . $fileName;
 
-    // Fetch and Save
-    $imageContent = @file_get_contents($apiUrl);
-    if ($imageContent) {
+    // Fetch and Save using cURL (More robust than file_get_contents)
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60); // Allow time for 'wait/3' + processing
+    curl_setopt($ch, CURLOPT_USERAGENT, 'SpectreBot/1.0');
+
+    // Disable SSL verify to avoid shared host certificate bundle issues
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+    $imageContent = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($imageContent && $httpCode === 200) {
         file_put_contents($filePath, $imageContent);
         $publicPath = '/uploads/screenshots/' . $fileName;
 
@@ -68,7 +84,8 @@ if ($method === 'POST' && $action === 'add') {
             sendJson(['error' => 'Database error: ' . $db->error], 500);
         }
     } else {
-        sendJson(['error' => 'Failed to capture screenshot'], 502);
+        $detail = $curlError ?: "HTTP Code $httpCode";
+        sendJson(['error' => "Screenshot Failed: $detail"], 502);
     }
 }
 

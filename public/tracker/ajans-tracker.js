@@ -237,12 +237,25 @@
     // --- Heatmap Logic (Simplified) ---
     function setupHeatmap() {
         if (navigator.doNotTrack === "1") return; // Respect DNT
+        // Sampling check (1.0 = 100%)
         if (Math.random() > CONFIG.heatmapSampleRate) return;
 
         state.heatmapEnabled = true;
+
+        // Clicks
         document.addEventListener('click', e => {
             state.heatmapBuffer.clicks.push({ x: e.pageX, y: e.pageY, timestamp: new Date().toISOString(), element: e.target.tagName });
             if (state.heatmapBuffer.clicks.length >= CONFIG.batchSize) flushHeatmap();
+        });
+
+        // Movements (Throttled)
+        let lastMove = 0;
+        document.addEventListener('mousemove', e => {
+            const now = Date.now();
+            if (now - lastMove > 200) { // Max 5 updates per second to save bandwidth
+                state.heatmapBuffer.movements.push({ x: e.pageX, y: e.pageY, timestamp: new Date().toISOString() });
+                lastMove = now;
+            }
         });
 
         setInterval(flushHeatmap, CONFIG.batchInterval);
@@ -250,7 +263,11 @@
     }
 
     function flushHeatmap() {
-        if (!state.heatmapEnabled || (state.heatmapBuffer.clicks.length === 0)) return;
+        if (!state.heatmapEnabled) return;
+
+        // Check if we have any data
+        const hasData = state.heatmapBuffer.clicks.length > 0 || state.heatmapBuffer.movements.length > 0;
+        if (!hasData) return;
 
         const data = {
             site_id: state.siteId,
@@ -259,13 +276,15 @@
             page_title: document.title,
             viewport_width: window.innerWidth,
             clicks: state.heatmapBuffer.clicks,
-            scrolls: [],
-            movements: [],
+            scrolls: [], // Scroll tracking can be added later if needed
+            movements: state.heatmapBuffer.movements,
             timestamp: new Date().toISOString()
         };
 
         sendToAPI('/heatmap', data);
-        state.heatmapBuffer.clicks = [];
+
+        // Clear Buffer
+        state.heatmapBuffer = { clicks: [], scrolls: [], movements: [] };
     }
 
     // --- Behavioral Modules ---
