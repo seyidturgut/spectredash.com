@@ -111,6 +111,12 @@ if (!is_array($res) || !isset($res['error'])) {
     $response['recent_feed'] = $res->fetch_all(MYSQLI_ASSOC);
 }
 
+// 6. Goals Overview (Top 5)
+$res = safeQuery($db, "SELECT goal_name, COUNT(*) as count FROM goals WHERE site_id = ? GROUP BY goal_name ORDER BY count DESC LIMIT 5", "s", [$site_id]);
+if (!is_array($res) || !isset($res['error'])) {
+    $response['goals_overview'] = $res->fetch_all(MYSQLI_ASSOC);
+}
+
 // 6. Traffic Chart
 $days_tr = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']; // date('w') 0=Sunday
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { StatCards } from './components/StatCards';
-import { TrafficChart } from './components/TrafficChart';
+import { GoalsCard } from './components/GoalsCard'; // Replaced TrafficChart
 import { LiveVisitorFeed } from './components/LiveVisitorFeed';
 import { DeviceStats } from './components/DeviceStats';
 import { AdminCustomers } from './components/AdminCustomers';
@@ -24,15 +24,8 @@ function App() {
     liveUserCount: 0
   });
 
-  const [trafficData, setTrafficData] = useState<{ name: string, visits: number }[]>([
-    { name: 'Pzt', visits: 0 },
-    { name: 'Sal', visits: 0 },
-    { name: 'Çar', visits: 0 },
-    { name: 'Per', visits: 0 },
-    { name: 'Cum', visits: 0 },
-    { name: 'Cmt', visits: 0 },
-    { name: 'Paz', visits: 0 },
-  ]);
+  // Replaced trafficData with goalsData
+  const [goalsData, setGoalsData] = useState<{ goal_name: string, count: number }[]>([]);
 
   const [visitors, setVisitors] = useState<Visitor[]>([]);
 
@@ -112,10 +105,9 @@ function App() {
         setDeviceData(newDeviceData);
       }
 
-      // Update Traffic Chart
-      if (data.traffic_chart) {
-        // Ensure data matches the expected format, although the API should send it correctly
-        setTrafficData(data.traffic_chart);
+      // Update Goals
+      if (data.goals_overview) {
+        setGoalsData(data.goals_overview);
       }
 
       // Update Feed
@@ -219,7 +211,8 @@ function App() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               <div className="lg:col-span-2 h-full">
-                <TrafficChart data={trafficData} />
+                {/* REPLACED TrafficChart with GoalsCard */}
+                <GoalsCard goals={goalsData} />
               </div>
               <div className="lg:col-span-1 h-full">
                 <DeviceStats data={deviceData} />
