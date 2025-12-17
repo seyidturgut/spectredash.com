@@ -8,12 +8,10 @@ interface GoalData {
 
 interface GoalsCardProps {
     goals?: GoalData[];
+    totalVisits: number;
 }
 
-export const GoalsCard: React.FC<GoalsCardProps> = ({ goals = [] }) => {
-
-    // Find max for simple bar visualization
-    const maxCount = goals.length > 0 ? Math.max(...goals.map(g => Number(g.count))) : 1;
+export const GoalsCard: React.FC<GoalsCardProps> = ({ goals = [], totalVisits = 1 }) => {
 
     return (
         <motion.div
@@ -29,8 +27,8 @@ export const GoalsCard: React.FC<GoalsCardProps> = ({ goals = [] }) => {
                         <Target size={20} />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-white">Hedefler</h3>
-                        <p className="text-xs text-gray-400">Aktif Hedefler</p>
+                        <h3 className="text-base font-semibold text-white">Hedef Dönüşümleri</h3>
+                        <p className="text-xs text-gray-400">Ziyaretçi Dönüşüm Oranları</p>
                     </div>
                 </div>
             </div>
@@ -44,23 +42,27 @@ export const GoalsCard: React.FC<GoalsCardProps> = ({ goals = [] }) => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {goals.map((goal, index) => (
-                            <div key={index} className="space-y-1">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-white font-medium">{goal.goal_name}</span>
-                                    <span className="text-purple-400 font-bold">{goal.count}</span>
+                        {goals.map((goal, index) => {
+                            const percent = totalVisits > 0 ? ((Number(goal.count) / totalVisits) * 100).toFixed(2) : '0.00';
+
+                            return (
+                                <div key={index} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-white font-medium">{goal.goal_name}</span>
+                                        <span className="text-purple-400 font-bold">%{percent}</span>
+                                    </div>
+                                    {/* Simple Bar */}
+                                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.min(Number(percent), 100)}%` }}
+                                            transition={{ duration: 1, delay: 0.5 + (index * 0.1) }}
+                                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                                        />
+                                    </div>
                                 </div>
-                                {/* Simple Bar */}
-                                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${(Number(goal.count) / maxCount) * 100}%` }}
-                                        transition={{ duration: 1, delay: 0.5 + (index * 0.1) }}
-                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                                    />
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { StatCards } from './components/StatCards';
+import { GoalsCard } from './components/GoalsCard';
 import { LiveVisitorFeed } from './components/LiveVisitorFeed';
 import { DeviceStats } from './components/DeviceStats';
 import { AdminCustomers } from './components/AdminCustomers';
@@ -22,6 +23,9 @@ function App() {
     averageDuration: '0dk 0sn',
     liveUserCount: 0
   });
+
+  // Goals Data for Overview
+  const [goalsData, setGoalsData] = useState<{ goal_name: string, count: number }[]>([]);
 
   const [visitors, setVisitors] = useState<Visitor[]>([]);
 
@@ -99,6 +103,11 @@ function App() {
           }
         });
         setDeviceData(newDeviceData);
+      }
+
+      // Update Goals
+      if (data.goals_overview) {
+        setGoalsData(data.goals_overview);
       }
 
       // Update Feed
@@ -202,8 +211,7 @@ function App() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               <div className="lg:col-span-2 h-full">
-                {/* REPLACED GoalsCard with detailed Analytics */}
-                {user.site_id && <GoalAnalytics siteId={user.site_id} />}
+                <GoalsCard goals={goalsData} totalVisits={stats.totalVisits} />
               </div>
               <div className="lg:col-span-1 h-full">
                 <DeviceStats data={deviceData} />
