@@ -239,8 +239,8 @@ export function HeatmapViewer({ siteId }: HeatmapViewerProps) {
             {/* Viewer Display */}
             <div className="flex-1 relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-white/10 mx-auto transition-all duration-500 w-full max-w-[1280px]">
                 {selectedPage ? (
-                    <div className="relative w-full h-[800px] overflow-y-auto custom-scrollbar">
-                        <div className="relative">
+                    <div className="relative w-full h-[800px] overflow-auto custom-scrollbar">
+                        <div className="relative min-w-[1280px]">
                             {/* Snapshot Image */}
                             <img
                                 src={selectedPage.screenshot_path}

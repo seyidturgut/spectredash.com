@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export type DateRangeOption = 'Bugün' | 'Dün' | 'Son 7 Gün' | 'Son 30 Gün';
+export type DateRangeOption = 'Bugün' | 'Dün' | 'Son 7 Gün' | 'Son 1 Ay' | 'Son 3 Ay';
 
 interface DateRangePickerProps {
     selectedRange: DateRangeOption;
     onRangeChange: (range: DateRangeOption) => void;
 }
 
-const options: DateRangeOption[] = ['Bugün', 'Dün', 'Son 7 Gün', 'Son 30 Gün'];
+const options: DateRangeOption[] = ['Bugün', 'Dün', 'Son 7 Gün', 'Son 1 Ay', 'Son 3 Ay'];
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({ selectedRange, onRangeChange }) => {
     const [isOpen, setIsOpen] = useState(false);

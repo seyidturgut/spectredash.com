@@ -189,6 +189,16 @@
         if (width < 768) deviceType = 'Mobile';
         else if (width < 1024) deviceType = 'Tablet';
 
+        // Capture UTM Parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const utm = {
+            utm_source: urlParams.get('utm_source'),
+            utm_medium: urlParams.get('utm_medium'),
+            utm_campaign: urlParams.get('utm_campaign'),
+            utm_term: urlParams.get('utm_term'),
+            utm_content: urlParams.get('utm_content')
+        };
+
         const data = {
             site_id: state.siteId,
             session_id: state.sessionId,
@@ -199,7 +209,8 @@
             screen_width: window.screen.width,
             viewport_width: window.innerWidth,
             device: deviceType, // Send detected device
-            is_bot: /bot|crawl|spider|googlebot/i.test(navigator.userAgent)
+            is_bot: /bot|crawl|spider|googlebot/i.test(navigator.userAgent),
+            ...utm // Spread UTM params into payload
         };
         sendToAPI('/track', data);
     }

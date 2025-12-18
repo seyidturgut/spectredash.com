@@ -21,6 +21,7 @@ $query = "
         event_name,
         event_category,
         event_label,
+        MAX(url) as url,
         COUNT(*) as count,
         SUM(event_value) as total_value,
         MAX(created_at) as last_event
@@ -53,6 +54,7 @@ while ($row = $result->fetch_assoc()) {
         'event_label' => $row['event_label'],
         'count' => (int) $row['count'],
         'total_value' => (int) $row['total_value'],
+        'url' => $row['url'],
         'last_event' => $row['last_event']
     ];
 }

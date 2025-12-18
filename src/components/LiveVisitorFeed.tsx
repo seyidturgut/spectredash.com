@@ -24,7 +24,7 @@ const getSourceColor = (source: string) => {
 
 export const LiveVisitorFeed: React.FC<LiveVisitorFeedProps> = ({ visitors }) => {
     return (
-        <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-3xl p-6 h-full flex flex-col relative overflow-hidden">
+        <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-3xl p-4 md:p-6 h-full flex flex-col relative overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

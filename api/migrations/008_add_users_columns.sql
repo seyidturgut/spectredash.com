@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN company_name VARCHAR(255) NULL;
+ALTER TABLE users ADD COLUMN contact_name VARCHAR(255) NULL;

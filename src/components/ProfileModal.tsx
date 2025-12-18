@@ -44,7 +44,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                         className="fixed inset-0 m-auto w-full max-w-2xl h-fit max-h-[90vh] overflow-y-auto bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-[70] p-0"
                     >
                         {/* Header */}
-                        <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5">
+                        <div className="flex justify-between items-center p-4 md:p-6 border-b border-white/5 bg-white/5">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Shield className="w-5 h-5 text-purple-400" />
                                 Profil ve Ayarlar
@@ -57,7 +57,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-8">
+                        <div className="p-4 md:p-6 space-y-8">
                             {/* Section 1: Account Info */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider flex items-center gap-2">

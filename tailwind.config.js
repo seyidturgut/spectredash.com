@@ -10,7 +10,8 @@ export default {
         background: '#050505',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', "SF Pro Text", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        space: ['"Space Grotesk"', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

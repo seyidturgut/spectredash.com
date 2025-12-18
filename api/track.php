@@ -58,14 +58,79 @@ if ($result->num_rows === 0) {
     sendJson(['error' => 'Invalid site_id'], 404);
 }
 
+// Basic UTM inputs
+$utm_source = $input['utm_source'] ?? null;
+$utm_medium = $input['utm_medium'] ?? null;
+$utm_campaign = $input['utm_campaign'] ?? null;
+$utm_term = $input['utm_term'] ?? null;
+$utm_content = $input['utm_content'] ?? null;
+
+// --- SMART SOURCE & KEYWORD EXTRACTION ---
+if (empty($utm_source) && !empty($referrer)) {
+    $host = parse_url($referrer, PHP_URL_HOST);
+
+    // 1. Google (Keywords hidden)
+    if (strpos($host, 'google') !== false) {
+        $utm_source = 'google';
+        $utm_medium = 'organic';
+        // 'q=' is rarely available due to SSL encryption
+    }
+    // 2. Bing
+    elseif (strpos($host, 'bing') !== false) {
+        $utm_source = 'bing';
+        $utm_medium = 'organic';
+        parse_str(parse_url($referrer, PHP_URL_QUERY), $query);
+        if (empty($utm_term) && !empty($query['q'])) {
+            $utm_term = $query['q'];
+        }
+    }
+    // 3. Yahoo
+    elseif (strpos($host, 'yahoo') !== false) {
+        $utm_source = 'yahoo';
+        $utm_medium = 'organic';
+        parse_str(parse_url($referrer, PHP_URL_QUERY), $query);
+        if (empty($utm_term) && !empty($query['p'])) {
+            $utm_term = $query['p'];
+        }
+    }
+    // 4. Yandex
+    elseif (strpos($host, 'yandex') !== false) {
+        $utm_source = 'yandex';
+        $utm_medium = 'organic';
+        parse_str(parse_url($referrer, PHP_URL_QUERY), $query);
+        if (empty($utm_term) && !empty($query['text'])) {
+            $utm_term = $query['text'];
+        }
+    }
+    // 5. Baidu
+    elseif (strpos($host, 'baidu') !== false) {
+        $utm_source = 'baidu';
+        $utm_medium = 'organic';
+        parse_str(parse_url($referrer, PHP_URL_QUERY), $query);
+        if (empty($utm_term) && !empty($query['wd'])) {
+            $utm_term = $query['wd'];
+        }
+    }
+    // 6. Socials
+    elseif (strpos($host, 'facebook.com') !== false || strpos($host, 'instagram.com') !== false || strpos($host, 't.co') !== false || strpos($host, 'linkedin.com') !== false) {
+        $utm_source = $host; // e.g. l.instagram.com
+        $utm_medium = 'social';
+    }
+    // 7. Direct / Referral
+    else {
+        $utm_source = $host;
+        $utm_medium = 'referral';
+    }
+}
+
 // Insert visit
-$query = "INSERT INTO ziyaretler (site_id, session_id, url, page_title, referrer, device, is_bot, page_load_time, viewport_width, viewport_height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$query = "INSERT INTO ziyaretler (site_id, session_id, url, page_title, referrer, device, is_bot, page_load_time, viewport_width, viewport_height, utm_source, utm_medium, utm_campaign, utm_term, utm_content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $db->prepare($query);
 if (!$stmt) {
     // Log error but don't crash client significantly, return 500 with message
     die(json_encode(['error' => 'Visit Insert Failed: ' . $db->error]));
 }
-$stmt->bind_param("ssssssiiii", $site_id, $session_id, $url, $page_title, $referrer, $device, $is_bot, $page_load_time, $viewport_width, $viewport_height);
+$stmt->bind_param("ssssssiiiisssss", $site_id, $session_id, $url, $page_title, $referrer, $device, $is_bot, $page_load_time, $viewport_width, $viewport_height, $utm_source, $utm_medium, $utm_campaign, $utm_term, $utm_content);
 $stmt->execute();
 
 // Update site last active

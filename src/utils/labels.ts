@@ -16,6 +16,33 @@ export const EVENT_LABELS: Record<string, string> = {
     'script_error': 'Javascript Hatası'
 };
 
+export const EVENT_SEVERITY: Record<string, 'critical' | 'warning' | 'info'> = {
+    'rage_click': 'critical',
+    'dead_click': 'critical',
+    'script_error': 'critical',
+    'form_abandonment': 'warning',
+    'performance_metric': 'warning', // Sometimes info, but good to check
+    'button_click': 'info',
+    'page_view': 'info',
+    'heartbeat': 'info',
+    'scroll_depth': 'info',
+    'video_play': 'info',
+    'test_event': 'info'
+};
+
+export const SELECTOR_LABELS: Record<string, string> = {
+    '.mfn-list-desc': 'Ürün Listesi Açıklaması',
+    '#contact-form': 'İletişim Formu',
+    '#g-recaptcha-response': 'Robot Doğrulama (Recaptcha)',
+    'input[type="submit"]': 'Gönder Butonu',
+    '.wpb_column': 'Sayfa Kolonu',
+    '#is-search-input': 'Arama Kutusu',
+    'h2': 'Başlık (H2)',
+    'strong': 'Kalın Metin',
+    'p': 'Paragraf',
+    'span': 'Metin Parçası'
+};
+
 export const CATEGORY_LABELS: Record<string, string> = {
     'engagement': 'Etkileşim',
     'media': 'Medya',
@@ -76,6 +103,23 @@ export function getHeatmapTypeLabel(type: string): string {
 
 export function getDateRangeLabel(range: string): string {
     return DATE_RANGE_LABELS[range] || range;
+}
+
+export function getEventSeverity(eventName: string): 'critical' | 'warning' | 'info' {
+    return EVENT_SEVERITY[eventName] || 'info';
+}
+
+export function getSelectorLabel(selector: string | null): string {
+    if (!selector) return '';
+    // Check exact match
+    if (SELECTOR_LABELS[selector]) return SELECTOR_LABELS[selector];
+
+    // Check partial dictionary mostly for IDs or Classes
+    for (const [key, label] of Object.entries(SELECTOR_LABELS)) {
+        if (selector.includes(key)) return label;
+    }
+
+    return selector;
 }
 
 export function formatNumber(num: number): string {

@@ -36,7 +36,7 @@ export const StatCards: React.FC<StatCardsProps> = ({ stats }) => {
             highlight: true,
         },
         {
-            title: 'Ortalama Süre',
+            title: 'Ort. Görüntüleme Süresi',
             value: stats.averageDuration,
             change: '+5.2%',
             changeLabel: 'geçen aya göre',

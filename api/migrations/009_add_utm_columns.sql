@@ -1,0 +1,5 @@
+ALTER TABLE ziyaretler ADD COLUMN utm_source VARCHAR(100) NULL;
+ALTER TABLE ziyaretler ADD COLUMN utm_medium VARCHAR(100) NULL;
+ALTER TABLE ziyaretler ADD COLUMN utm_campaign VARCHAR(100) NULL;
+ALTER TABLE ziyaretler ADD COLUMN utm_term VARCHAR(255) NULL;
+ALTER TABLE ziyaretler ADD COLUMN utm_content VARCHAR(255) NULL;

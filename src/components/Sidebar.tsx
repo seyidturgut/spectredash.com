@@ -2,6 +2,7 @@ import { LayoutDashboard, Activity, Settings, X, Users2, LogOut, Target, Zap, Ma
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { User } from '../types';
+import { LiveUserBadge } from './LiveUserBadge';
 
 interface SidebarProps {
     activeView: string;
@@ -10,9 +11,10 @@ interface SidebarProps {
     onMobileClose: () => void;
     user: User | null;
     onLogout: () => void;
+    liveUserCount?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isMobileOpen, onMobileClose, user, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isMobileOpen, onMobileClose, user, onLogout, liveUserCount = 0 }) => {
 
     // Default Items (Client View)
     let menuItems = [
@@ -110,8 +112,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, isMobi
                     ))}
                 </nav>
 
+                {/* Live Badge */}
+                <div className="px-4 mt-4 flex justify-center">
+                    <LiveUserBadge count={liveUserCount} />
+                </div>
+
                 {/* Logout Button (Bottom) */}
-                <div className="px-4 mt-auto pt-8 border-t border-white/5">
+                <div className="px-4 pt-4 border-t border-white/5">
                     <motion.button
                         onClick={onLogout}
                         whileHover={{ scale: 1.02, x: 5 }}

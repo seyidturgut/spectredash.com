@@ -1,2 +1,0 @@
-ALTER TABLE ziyaretler
-ADD COLUMN page_title VARCHAR(255) DEFAULT NULL AFTER url;

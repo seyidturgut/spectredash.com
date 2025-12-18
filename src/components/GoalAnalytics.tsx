@@ -126,13 +126,13 @@ export function GoalAnalytics({ siteId }: GoalAnalyticsProps) {
                                         style={{ width: `${(goal.count / maxCount) * 100}%` }}
                                     />
 
-                                    <div className="relative p-5 flex items-center justify-between">
+                                    <div className="relative p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-purple-400 group-hover:text-purple-300 transition-colors">
+                                            <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-purple-400 group-hover:text-purple-300 transition-colors shrink-0">
                                                 <Target size={18} />
                                             </div>
-                                            <div>
-                                                <h4 className="font-semibold text-white text-lg">
+                                            <div className="min-w-0">
+                                                <h4 className="font-semibold text-white text-lg truncate pr-2">
                                                     {getGoalLabel(goal.goal_name)}
                                                 </h4>
                                                 <p className="text-sm text-gray-500 flex items-center gap-2">
@@ -143,7 +143,7 @@ export function GoalAnalytics({ siteId }: GoalAnalyticsProps) {
                                             </div>
                                         </div>
 
-                                        <div className="text-right">
+                                        <div className="text-left sm:text-right pl-[3.5rem] sm:pl-0">
                                             <div className="font-bold text-white text-lg font-mono">
                                                 {formatCurrency(goal.total_value)}
                                             </div>

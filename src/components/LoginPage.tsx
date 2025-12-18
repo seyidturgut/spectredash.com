@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, ArrowRight, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { User } from '../types';
 
 interface LoginPageProps {
     onLogin: (user: User) => void;
+    onBack?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -52,8 +53,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
 
                 <div className="glass-panel p-8 md:p-10 rounded-3xl border border-white/10 relative overflow-hidden backdrop-blur-xl">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="absolute top-4 left-4 p-2 text-gray-500 hover:text-white transition-colors rounded-lg hover:bg-white/5 z-10"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                    )}
                     {/* Header */}
-                    <div className="text-center mb-10">
+                    <div className="text-center mb-10 mt-4">
                         <div className="w-20 h-20 flex items-center justify-center mx-auto mb-6 transform hover:scale-105 transition-transform duration-300">
                             <img src="/img/favicon.png" alt="Spectre Logo" className="w-full h-full object-contain drop-shadow-2xl" />
                         </div>

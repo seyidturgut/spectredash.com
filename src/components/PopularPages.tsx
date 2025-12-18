@@ -20,7 +20,7 @@ export const PopularPages: React.FC<PopularPagesProps> = ({ pages = [] }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="glass-panel p-5 rounded-2xl w-full h-full flex flex-col border border-white/5 relative overflow-hidden"
+            className="glass-panel p-4 md:p-5 rounded-2xl w-full h-full flex flex-col border border-white/5 relative overflow-hidden"
         >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

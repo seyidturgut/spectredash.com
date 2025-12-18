@@ -56,7 +56,7 @@ if ($method === 'POST' && $action === 'add') {
 
     // Disable SSL verify to avoid shared host certificate bundle issues
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     $imageContent = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

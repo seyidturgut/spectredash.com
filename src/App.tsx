@@ -4,6 +4,7 @@ import { StatCards } from './components/StatCards';
 import { GoalsCard } from './components/GoalsCard';
 import { PopularPages } from './components/PopularPages';
 import { LiveVisitorFeed } from './components/LiveVisitorFeed';
+import { TrafficSourcesCard } from './components/TrafficSourcesCard';
 import { DeviceStats } from './components/DeviceStats';
 import { AdminCustomers } from './components/AdminCustomers';
 import { DateRangePicker, type DateRangeOption } from './components/DateRangePicker';
@@ -14,6 +15,8 @@ import { SettingsPage } from './components/SettingsPage';
 import { GoalAnalytics } from './components/GoalAnalytics';
 import { EventAnalytics } from './components/EventAnalytics';
 import { HeatmapViewer } from './components/HeatmapViewer';
+import { InsightBanner } from './components/InsightBanner';
+import { LandingPage } from './components/LandingPage';
 import type { Visitor, User, Stats } from './types';
 
 function App() {
@@ -28,6 +31,9 @@ function App() {
   // Goals Data for Overview
   const [goalsData, setGoalsData] = useState<{ goal_name: string, count: number }[]>([]);
   const [popularPages, setPopularPages] = useState<any[]>([]);
+  const [dailyInsight, setDailyInsight] = useState('');
+  const [trafficSources, setTrafficSources] = useState<any[]>([]);
+  const [searchTerms, setSearchTerms] = useState<any[]>([]);
 
   const [visitors, setVisitors] = useState<Visitor[]>([]);
 
@@ -38,6 +44,7 @@ function App() {
   ]);
 
   const [activeView, setActiveView] = useState('dashboard');
+  const [showLogin, setShowLogin] = useState(false);
 
   // Auth State (with Persistence)
   const [user, setUser] = useState<User | null>(() => {
@@ -69,7 +76,7 @@ function App() {
     if (!user || user.role !== 'client' || !user.site_id) return;
 
     try {
-      const res = await fetch(`/api/stats.php?site_id=${user.site_id}`);
+      const res = await fetch(`/api/stats.php?site_id=${user.site_id}&date_range=${encodeURIComponent(selectedRange)}`);
       const data = await res.json();
 
       // Update Stats
@@ -116,6 +123,11 @@ function App() {
         setPopularPages(data.popular_pages);
       }
 
+      // Update Daily Insight
+      if (data.daily_summary) {
+        setDailyInsight(data.daily_summary);
+      }
+
       // Update Feed
       if (data.recent_feed) {
         const newVisitors = data.recent_feed.map((v: any) => ({
@@ -130,10 +142,20 @@ function App() {
         setVisitors(newVisitors);
       }
 
+      // Update Traffic Sources
+      if (data.traffic_sources) {
+        setTrafficSources(data.traffic_sources);
+      }
+
+      // Update Search Terms
+      if (data.search_terms) {
+        setSearchTerms(data.search_terms);
+      }
+
     } catch (err) {
       console.error("Failed to fetch stats:", err);
     }
-  }, [user]);
+  }, [user, selectedRange]);
 
   // Initial Fetch & Poll
   useEffect(() => {
@@ -149,6 +171,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    setShowLogin(false); // Reset to landing page on logout
     window.location.reload();
   };
 
@@ -160,12 +183,17 @@ function App() {
 
   // If not logged in, show Login Page
   if (!user) {
-    return (
-      <div className="min-h-screen relative text-white selection:bg-purple-500/30">
-        <BackgroundOrbs />
-        <LoginPage onLogin={handleLogin} />
-      </div>
-    );
+    if (showLogin) {
+      return (
+        <div className="min-h-screen relative text-white selection:bg-purple-500/30">
+          <BackgroundOrbs />
+          <LoginPage onLogin={handleLogin} onBack={() => setShowLogin(false)} />
+        </div>
+      );
+    }
+
+    // DEFAULT: LANDING PAGE
+    return <LandingPage onLoginClick={() => setShowLogin(true)} />;
   }
 
   return (
@@ -211,12 +239,15 @@ function App() {
               </div>
             </header>
 
+            {/* AI Insight Banner */}
+            <InsightBanner insight={dailyInsight} />
+
             {/* Stats & Charts */}
             <StatCards stats={stats} />
 
             {/* Charts Row */}
             {/* Charts Row - 3 Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-8">
               <div className="lg:col-span-1 h-full">
                 <GoalsCard goals={goalsData} totalVisits={stats.totalVisits} />
               </div>
@@ -226,6 +257,11 @@ function App() {
               <div className="lg:col-span-1 h-full">
                 <DeviceStats data={deviceData} />
               </div>
+            </div>
+
+            {/* Traffic Sources Row */}
+            <div className="mb-8">
+              <TrafficSourcesCard sources={trafficSources} terms={searchTerms} />
             </div>
 
             {/* Live Feed Row */}

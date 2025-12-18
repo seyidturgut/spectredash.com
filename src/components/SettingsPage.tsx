@@ -58,7 +58,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => {
 
             {/* Integration Method Tabs */}
             <div className="flex flex-col gap-8">
-                <div className="flex justify-center md:justify-start gap-4 border-b border-white/10 pb-4">
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 border-b border-white/10 pb-4">
                     <button
                         onClick={() => setActiveTab('manual')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${activeTab === 'manual'
@@ -77,7 +77,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => {
                             }`}
                     >
                         <Globe size={20} />
-                        WordPress Eklentisi with
+                        WordPress Eklentisi
                     </button>
                 </div>
 
@@ -85,7 +85,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => {
                     key={activeTab}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="glass-panel p-8 rounded-3xl border border-white/5 relative overflow-hidden"
+                    className="glass-panel p-4 md:p-8 rounded-3xl border border-white/5 relative overflow-hidden"
                 >
                     {/* Glow */}
                     <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -97,8 +97,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => {
                                 <p className="text-gray-400">Aşağıdaki tek satır kodu sitenizin <code className="text-pink-400">{'<head>'}</code> etiketleri arasına ekleyin. Hepsi bu kadar.</p>
                             </div>
 
-                            <div className="bg-[#1e1e1e] p-6 rounded-2xl border border-white/10 shadow-inner group relative">
-                                <code className="text-sm font-mono text-blue-300 break-all leading-relaxed">
+                            <div className="bg-[#1e1e1e] p-4 md:p-6 rounded-2xl border border-white/10 shadow-inner group relative overflow-x-auto">
+                                <code className="text-sm font-mono text-blue-300 whitespace-pre-wrap break-all leading-relaxed">
                                     &lt;script src="{window.location.origin}/tracker/ajans-tracker.js" data-site-id="{SITE_ID}" async&gt;&lt;/script&gt;
                                 </code>
                                 <button
